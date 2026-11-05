@@ -10,7 +10,7 @@ import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { type DrillState } from './useDrillState'
 
 export function DesktopApp({ state }: { state: DrillState }) {
-  const { currentKey, manualKey, chordIndex, pentaMode, quiz, scale, selectKey, nextKey, selectChord, togglePenta } = state
+  const { currentKey, todayKey, chordIndex, pentaMode, quiz, scale, selectKey, nextKey, selectChord, togglePenta } = state
   const [chooserOpen, setChooserOpen] = useState(false)
   const close = () => setChooserOpen(false)
 
@@ -41,9 +41,8 @@ export function DesktopApp({ state }: { state: DrillState }) {
             >
               {formatNote(currentKey)} <span className="text-[16px] text-muted align-middle">▾</span>
             </button>
-            <div className="text-[12px] text-muted">{manualKey ? '手で選んだキー' : '今日のキー'}</div>
             {chooserOpen && (
-              <KeyPopover current={currentKey} onSelect={(k) => { selectKey(k); close() }} onNext={() => { nextKey(); close() }} onClose={close} />
+              <KeyPopover current={currentKey} today={todayKey} onSelect={(k) => { selectKey(k); close() }} onNext={() => { nextKey(); close() }} onClose={close} />
             )}
           </div>
         </div>

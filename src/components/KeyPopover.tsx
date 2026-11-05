@@ -2,9 +2,9 @@
 import { type NoteName } from '../domain/pitch'
 import { KeyChooser } from './KeyChooser'
 
-type Props = { current: NoteName; onSelect(k: NoteName): void; onNext(): void; onClose(): void }
+type Props = { current: NoteName; today: NoteName; onSelect(k: NoteName): void; onNext(): void; onClose(): void }
 
-export function KeyPopover({ current, onSelect, onNext, onClose }: Props) {
+export function KeyPopover({ current, today, onSelect, onNext, onClose }: Props) {
   return (
     <>
       <div data-testid="popover-backdrop" className="fixed inset-0 z-20" onClick={onClose} />
@@ -13,7 +13,7 @@ export function KeyPopover({ current, onSelect, onNext, onClose }: Props) {
         aria-label="キーを選ぶ"
         className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-[360px] bg-surface border border-line rounded-2xl p-4"
       >
-        <KeyChooser current={current} onSelect={onSelect} onNext={onNext} />
+        <KeyChooser current={current} today={today} onSelect={onSelect} onNext={onNext} />
       </div>
     </>
   )

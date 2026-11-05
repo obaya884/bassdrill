@@ -14,7 +14,7 @@ import { useSwipe } from './useSwipe'
 import { type DrillState } from './useDrillState'
 
 export function PhoneApp({ state }: { state: DrillState }) {
-  const { focus, currentKey, manualKey, chordIndex, pentaMode, quiz, scale, selectChord, selectKey, nextKey, togglePenta } = state
+  const { focus, currentKey, todayKey, chordIndex, pentaMode, quiz, scale, selectChord, selectKey, nextKey, togglePenta } = state
   const index = SECTIONS.indexOf(focus)
 
   // キー選択シート（F-104・F-604）。開いている間、帯のスワイプは効かない
@@ -62,7 +62,7 @@ export function PhoneApp({ state }: { state: DrillState }) {
 
   return (
     <div className="h-dvh flex flex-col bg-bg text-ink overflow-hidden">
-      <PhoneHeader keyName={formatNote(currentKey)} manual={manualKey !== null} onKeyTap={() => setSheetOpen(true)} />
+      <PhoneHeader keyName={formatNote(currentKey)} onKeyTap={() => setSheetOpen(true)} />
       <PageDots count={SECTIONS.length} index={index} onPrev={() => state.moveFocus(-1)} onNext={() => state.moveFocus(1)} />
       <div className="flex-1 overflow-hidden">
         <div
@@ -89,7 +89,7 @@ export function PhoneApp({ state }: { state: DrillState }) {
       </div>
       {sheetOpen && (
         <Sheet label="キーを選ぶ" onClose={closeSheet}>
-          <KeyChooser current={currentKey} onSelect={(k) => { selectKey(k); closeSheet() }} onNext={() => { nextKey(); closeSheet() }} />
+          <KeyChooser current={currentKey} today={todayKey} onSelect={(k) => { selectKey(k); closeSheet() }} onNext={() => { nextKey(); closeSheet() }} />
         </Sheet>
       )}
     </div>

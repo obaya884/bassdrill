@@ -6,17 +6,13 @@ import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { App } from './App'
 import { setViewport } from '../test/viewport'
-import { STORAGE_KEY } from './storage'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
 const section = (id: string) => within(document.querySelector(`#section-${id}`) as HTMLElement)
 const openChooser = () => userEvent.click(screen.getByTestId('current-key'))
 
 describe('App（PC 表示）', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setViewport(1280)
-  })
+  beforeEach(() => setViewport(1280))
 
   it('6 節が番号なしで縦に並び、ショートカット行・ヘルプ・現在地・k/12 が無い', () => {
     render(<App now={NOW} />)
@@ -28,22 +24,26 @@ describe('App（PC 表示）', () => {
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(document.querySelector('[data-focused]')).toBeNull()
   })
-  it('今日のキーがヘッダーに出て、5 度圏の図はヘッダーには無い', () => {
+  it('今日のキーがヘッダーに出て、補助文言も 5 度圏の図もヘッダーには無い', () => {
     render(<App now={NOW} />)
     expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
-    expect(screen.getByText('今日のキー')).toBeInTheDocument()
+    expect(screen.queryByText('今日のキー')).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '5 度圏' })).not.toBeInTheDocument()
   })
-  it('ヘッダーのキーでポップオーバーが開き、E♭ を選ぶと閉じて手で選んだキーになる', async () => {
+  it('ヘッダーのキーでポップオーバーが開き、E♭ を選ぶと閉じる。円では今日のキーが色、E♭ が今のキー', async () => {
     render(<App now={NOW} />)
     await openChooser()
     const pop = screen.getByRole('dialog', { name: 'キーを選ぶ' })
     await userEvent.click(within(pop).getByRole('button', { name: 'E♭' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('current-key')).toHaveTextContent('E♭')
-    expect(screen.getByText('手で選んだキー')).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).manualKey).toBe('E♭')
+    expect(screen.queryByText('手で選んだキー')).not.toBeInTheDocument()
+    await openChooser()
+    const circle = within(screen.getByRole('dialog', { name: 'キーを選ぶ' })).getByRole('group', { name: '5 度圏' })
+    expect(within(circle).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-today', 'true')
+    expect(within(circle).getByRole('button', { name: 'E♭' })).toHaveAttribute('data-current', 'true')
+    expect(within(circle).getByRole('button', { name: 'E♭' })).not.toHaveAttribute('data-today')
   })
   it('ポップオーバーの外をクリックすると閉じる', async () => {
     render(<App now={NOW} />)
@@ -59,7 +59,7 @@ describe('App（PC 表示）', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 1)))
     expect(document.querySelector('#section-quiz')).toBe(before)
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).keyOffset).toBe(1)
+    expect(localStorage.length).toBe(0)
   })
   it('ポップオーバーの中は 5 度圏の円で、PC でもそこから選ぶ', async () => {
     render(<App now={NOW} />)
@@ -97,21 +97,24 @@ describe('App（PC 表示）', () => {
     window.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(false)
   })
-  it('状態は localStorage に残り、開き直しても続きから', async () => {
+  it('開き直すと今日のキーに戻り、ブラウザに何も残らない', async () => {
     const { unmount } = render(<App now={NOW} />)
     await openChooser()
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
     await openChooser()
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    await openChooser()
+    await userEvent.click(screen.getByRole('button', { name: 'A' }))
+    expect(screen.getByTestId('current-key')).toHaveTextContent('A')
     unmount()
+    expect(localStorage.length).toBe(0)
     render(<App now={NOW} />)
-    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 2)))
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
   })
 })
 
 describe('App: 開いたまま日付をまたぐ', () => {
   beforeEach(() => {
-    localStorage.clear()
     setViewport(1280)
     vi.useFakeTimers()
   })
@@ -125,15 +128,11 @@ describe('App: 開いたまま日付をまたぐ', () => {
       vi.advanceTimersByTime(60_000)
     })
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(20763)))
-    expect(screen.getByText('今日のキー')).toBeInTheDocument()
   })
 })
 
 describe('App: 表示モードの切り替え（F-606）', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setViewport(1280)
-  })
+  beforeEach(() => setViewport(1280))
 
   it('幅が変わると木が切り替わり、出題とコード選択とキーを引き継ぐ', async () => {
     render(<App now={NOW} />)

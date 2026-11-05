@@ -1,14 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDrillState } from './useDrillState'
-import { STORAGE_KEY } from './storage'
+import { equalsNote } from '../domain/pitch'
+import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { SECTIONS } from './sections'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
 
 describe('useDrillState', () => {
-  beforeEach(() => localStorage.clear())
-
   it('節は 6 つで、初期の節はスケール', () => {
     expect(SECTIONS).toEqual(['scale', 'penta', 'seventh', 'quiz', 'diatonic', 'nonDiatonic'])
     const { result } = renderHook(() => useDrillState({ now: NOW }))
@@ -40,9 +39,14 @@ describe('useDrillState', () => {
     for (let i = 0; i < 10; i++) act(() => result.current.moveFocus(1))
     expect(result.current.focus).toBe('nonDiatonic')
   })
-  it('古い intervalSec を持つ保存でも起動する', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ intervalSec: 8, date: '2026-11-05', keyOffset: 2, manualKey: null }))
+  it('todayKey は進めても手で選んでも変わらず、何も保存しない', () => {
     const { result } = renderHook(() => useDrillState({ now: NOW }))
-    expect(result.current.keyOffset).toBe(2)
+    const today = keyForDay(dayNumber(NOW))
+    expect(equalsNote(result.current.todayKey, today)).toBe(true)
+    act(() => result.current.nextKey())
+    act(() => result.current.selectKey(result.current.scale[4]))
+    expect(equalsNote(result.current.todayKey, today)).toBe(true)
+    expect(equalsNote(result.current.currentKey, today)).toBe(false)
+    expect(localStorage.length).toBe(0)
   })
 })

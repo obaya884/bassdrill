@@ -13,10 +13,7 @@ const next = () => userEvent.click(screen.getByRole('button', { name: '次の節
 const currentTitle = () => focused().getByRole('heading', { level: 2 }).textContent
 
 describe('PhoneApp: 骨組み（F-601・F-602）', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setViewport(390)
-  })
+  beforeEach(() => setViewport(390))
 
   it('幅 390 では 6 節のページ送りで、最初の節はメジャースケール。下部バーと現在地と k/12 は無い', () => {
     render(<App now={NOW} />)
@@ -26,7 +23,7 @@ describe('PhoneApp: 骨組み（F-601・F-602）', () => {
     expect(screen.queryByText(/節 \d/)).not.toBeInTheDocument()
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '次のキー' })).not.toBeInTheDocument()
-    expect(screen.getByText('今日のキー')).toBeInTheDocument()
+    expect(screen.queryByText('今日のキー')).not.toBeInTheDocument()
     expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')
   })
   it('› ‹ で節が移り、端で止まる', async () => {
@@ -43,22 +40,20 @@ describe('PhoneApp: 骨組み（F-601・F-602）', () => {
 })
 
 describe('PhoneApp: キー選択シート（F-104・F-604）', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setViewport(390)
-  })
+  beforeEach(() => setViewport(390))
 
-  it('ヘッダーのキーでシートが開き、E♭ を選ぶと閉じて手で選んだキーになり、節は動かない', async () => {
+  it('ヘッダーのキーでシートが開き、E♭ を選ぶと閉じて今のキーになり、節は動かない', async () => {
     render(<App now={NOW} />)
     await next()
     await userEvent.click(screen.getByTestId('current-key'))
     const sheet = screen.getByRole('dialog', { name: 'キーを選ぶ' })
     expect(within(sheet).getByRole('group', { name: '5 度圏' })).toBeInTheDocument()
     expect(within(sheet).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-current', 'true')
+    expect(within(sheet).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-today', 'true')
     await userEvent.click(within(sheet).getByRole('button', { name: 'E♭' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('current-key')).toHaveTextContent('E♭')
-    expect(screen.getByText('手で選んだキー')).toBeInTheDocument()
+    expect(screen.queryByText('手で選んだキー')).not.toBeInTheDocument()
     expect(currentTitle()).toBe('ペンタトニック')
   })
   it('シートの「次のキー」で進み、節は動かない', async () => {
@@ -87,10 +82,7 @@ describe('PhoneApp: キー選択シート（F-104・F-604）', () => {
 })
 
 describe('PhoneApp: 節の中身（F-602・F-603・F-403・F-304）', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setViewport(390)
-  })
+  beforeEach(() => setViewport(390))
   const tap = (el: Element, x = 100, y = 100) => {
     fireEvent.pointerDown(el, { clientX: x, clientY: y, pointerId: 1 })
     fireEvent.pointerUp(el, { clientX: x + 2, clientY: y + 1, pointerId: 1 })

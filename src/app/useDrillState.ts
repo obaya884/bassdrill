@@ -1,13 +1,12 @@
 // App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ）。PC とスマホの両方の木が同じ状態を使う（F-606）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { type NoteName, equalsNote, formatNote } from '../domain/pitch'
-import { KEYS, majorScale } from '../domain/scale'
+import { type NoteName, equalsNote } from '../domain/pitch'
+import { majorScale } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { type Question } from '../domain/quiz'
 import { type PentaMode } from '../components/sections/PentaSection'
 import { useQuizRunner, type QuizPhase } from './useQuizRunner'
 import { SECTIONS, type SectionId } from './sections'
-import { loadStored, saveStored } from './storage'
 
 export type ChordSectionId = 'seventh' | 'diatonic' | 'nonDiatonic'
 export const CHORD_COUNT: Record<ChordSectionId, number> = { seventh: 4, diatonic: 7, nonDiatonic: 8 }
@@ -17,6 +16,8 @@ export const isChordSection = (id: string): id is ChordSectionId => id in CHORD_
 export type DrillState = {
   today: string
   currentKey: NoteName
+  /** 今日のキー（F-101）。進めても手で選んでも変わらない */
+  todayKey: NoteName
   manualKey: NoteName | null
   keyOffset: number
   scale: NoteName[]
@@ -39,10 +40,6 @@ function todayString(now: Date): string {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
-function keyFromName(name: string | null): NoteName | null {
-  return name ? (KEYS.find((k) => formatNote(k) === name) ?? null) : null
-}
-
 export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState {
   // 描画中に Date を呼ばない（lint の purity）。開いたまま日付をまたいだら 1 分ごとの確認とタブ復帰で追随する
   const [now, setNow] = useState(() => nowProp ?? new Date())
@@ -58,10 +55,10 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
-  const [stored] = useState(() => loadStored(today))
+  // 保存はしない（F-505 廃止）。開き直すと位置 0・手の選択なし＝今日のキーから
   const [focus, setFocus] = useState<SectionId>('scale')
-  const [keyOffset, setKeyOffset] = useState(stored.keyOffset)
-  const [manualKey, setManualKey] = useState<NoteName | null>(() => keyFromName(stored.manualKey))
+  const [keyOffset, setKeyOffset] = useState(0)
+  const [manualKey, setManualKey] = useState<NoteName | null>(null)
   const [pentaMode, setPentaMode] = useState<PentaMode>('major')
   const [chordIndex, setChordIndex] = useState<Record<ChordSectionId, number>>(NO_SELECTION)
 
@@ -75,13 +72,10 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
     setChordIndex(NO_SELECTION)
   }, [today])
 
+  const todayKey = keyForDay(day)
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
   const quiz = useQuizRunner({ scale })
-
-  useEffect(() => {
-    saveStored({ date: today, keyOffset, manualKey: manualKey ? formatNote(manualKey) : null })
-  }, [today, keyOffset, manualKey])
 
   const moveFocus = useCallback((delta: number) => {
     setFocus((f) => SECTIONS[Math.min(SECTIONS.length - 1, Math.max(0, SECTIONS.indexOf(f) + delta))])
@@ -106,7 +100,7 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
   const togglePenta = useCallback(() => setPentaMode((m) => (m === 'major' ? 'minor' : 'major')), [setPentaMode])
 
   return {
-    today, currentKey, manualKey, keyOffset, scale,
+    today, currentKey, todayKey, manualKey, keyOffset, scale,
     focus, setFocus, moveFocus,
     chordIndex, selectChord,
     pentaMode, togglePenta,

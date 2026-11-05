@@ -65,7 +65,7 @@ export function PhoneApp({ state }: { state: DrillState }) {
 
   const body = (id: SectionId) => {
     switch (id) {
-      case 'key': return <KeySection keyNote={currentKey} manual={manualKey !== null} />
+      case 'key': return <KeySection keyNote={currentKey} manual={manualKey !== null} compact />
       case 'scale': return <ScaleSection keyNote={currentKey} compact />
       case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} compact />
       case 'seventh': return <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} compact onSelect={(i) => selectChord('seventh', i)} />

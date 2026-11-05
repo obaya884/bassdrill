@@ -27,8 +27,9 @@ export function DesktopApp({ state }: { state: DrillState }) {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <header className="fixed top-0 inset-x-0 h-[88px] z-10 bg-surface border-b border-line">
+      <header className="fixed top-0 inset-x-0 h-[88px] z-10 bg-surface border-b border-line" role="banner">
         <div className="max-w-[1200px] mx-auto h-full px-6 flex items-center justify-center">
+          <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[18px] font-semibold text-muted tracking-wide select-none">Bass Drill</div>
           <div className="relative flex flex-col items-center">
             <button
               type="button"

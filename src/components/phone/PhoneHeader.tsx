@@ -3,7 +3,8 @@ type Props = { keyName: string; manual: boolean; onKeyTap(): void }
 
 export function PhoneHeader({ keyName, manual, onKeyTap }: Props) {
   return (
-    <header className="shrink-0 h-[calc(56px+env(safe-area-inset-top))] bg-surface border-b border-line flex flex-col items-center justify-center pt-[env(safe-area-inset-top)] pl-[max(12px,env(safe-area-inset-left))] pr-[max(12px,env(safe-area-inset-right))]">
+    <header role="banner" className="relative shrink-0 h-[calc(56px+env(safe-area-inset-top))] bg-surface border-b border-line flex flex-col items-center justify-center pt-[env(safe-area-inset-top)] pl-[max(12px,env(safe-area-inset-left))] pr-[max(12px,env(safe-area-inset-right))]">
+      <div className="absolute left-[max(12px,env(safe-area-inset-left))] top-1/2 -translate-y-1/2 text-[12px] font-semibold text-muted tracking-wide select-none">Bass Drill</div>
       <button
         type="button"
         data-testid="current-key"

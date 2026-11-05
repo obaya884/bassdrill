@@ -3,10 +3,10 @@
 import { type NoteName, equalsNote, formatNote } from '../domain/pitch'
 import { KEYS } from '../domain/scale'
 
-const SIZE = 260
-const R = 104
-const BUTTON = 52
-const BUTTON_CURRENT = 60
+const SIZE = 300
+const R = 122
+const BUTTON = 48
+const BUTTON_CURRENT = 56
 
 type Props = { current: NoteName; onSelect(k: NoteName): void; onNext(): void }
 
@@ -35,7 +35,7 @@ export function KeyChooser({ current, onSelect, onNext }: Props) {
               aria-label={formatNote(k)}
               data-current={isCurrent ? 'true' : undefined}
               onClick={() => onSelect(k)}
-              className={`absolute rounded-full text-[22px] font-bold leading-none ${isCurrent ? 'bg-accent text-bg' : 'bg-surface-raised text-ink hover:bg-line'}`}
+              className={`absolute rounded-full text-[20px] font-bold leading-none ${isCurrent ? 'bg-accent text-bg' : 'bg-surface-raised text-ink hover:bg-line'}`}
               style={{ width: d, height: d, left: x - d / 2, top: y - d / 2 }}
             >
               {formatNote(k)}

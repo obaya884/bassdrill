@@ -11,7 +11,7 @@ export function KeyPopover({ current, onSelect, onNext, onClose }: Props) {
       <div
         role="dialog"
         aria-label="キーを選ぶ"
-        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-[320px] bg-surface border border-line rounded-2xl p-4"
+        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-[360px] bg-surface border border-line rounded-2xl p-4"
       >
         <KeyChooser current={current} onSelect={onSelect} onNext={onNext} />
       </div>

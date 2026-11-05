@@ -20,6 +20,14 @@ describe('KeyChooser', () => {
     expect(parseFloat(pos('G').left)).toBeGreaterThan(parseFloat(pos('C').left))
     expect(parseFloat(pos('G').top)).toBeGreaterThan(parseFloat(pos('C').top))
     expect(parseFloat(pos('G♭').top)).toBeGreaterThan(parseFloat(pos('C').top) + 200)
+    // 隣のボタンと重ならない: 中心間の距離が、大きいほうのボタン（今のキー 56px）と通常（48px）の半径の和より大きい
+    const center = (name: string) => {
+      const b = within(circle).getByRole('button', { name })
+      const w = parseFloat(b.style.width)
+      return [parseFloat(b.style.left) + w / 2, parseFloat(b.style.top) + w / 2]
+    }
+    const [cx, cy] = center('C'), [gx, gy] = center('G')
+    expect(Math.hypot(gx - cx, gy - cy)).toBeGreaterThan(56 / 2 + 48 / 2 + 4)
     await userEvent.click(within(circle).getByRole('button', { name: 'E♭' }))
     expect(onSelect).toHaveBeenCalledWith(note('E', -1))
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))

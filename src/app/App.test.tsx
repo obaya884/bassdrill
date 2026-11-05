@@ -30,6 +30,7 @@ describe('App（PC 表示）', () => {
   })
   it('今日のキーがヘッダーに出て、5 度圏の図はヘッダーには無い', () => {
     render(<App now={NOW} />)
+    expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '5 度圏' })).not.toBeInTheDocument()

@@ -27,6 +27,7 @@ describe('PhoneApp: 骨組み（F-601・F-602）', () => {
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '次のキー' })).not.toBeInTheDocument()
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
+    expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')
   })
   it('› ‹ で節が移り、端で止まる', async () => {
     render(<App now={NOW} />)

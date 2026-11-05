@@ -32,3 +32,5 @@ dist-ssr
 
 # superpowers の作業領域
 .DS_Store
+# Vercel CLI が作る環境ファイル
+.env*

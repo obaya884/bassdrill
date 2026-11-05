@@ -5,7 +5,7 @@ import { markersFor, type ToneSpec } from '../../domain/fretboard'
 import { Fretboard } from '../Fretboard'
 import { ChordTable } from '../ChordTable'
 
-export function chordTones(x: LabeledChord, highlightOutside: boolean): ToneSpec[] {
+function chordTones(x: LabeledChord, highlightOutside: boolean): ToneSpec[] {
   return x.chord.tones.map((t, i) => ({
     note: t.note,
     label: t.degreeLabel,

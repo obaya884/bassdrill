@@ -4,7 +4,7 @@ import { majorScale } from '../../domain/scale'
 import { markersFor, type ToneSpec } from '../../domain/fretboard'
 import { Fretboard } from '../Fretboard'
 
-export function scaleTones(keyNote: NoteName): ToneSpec[] {
+function scaleTones(keyNote: NoteName): ToneSpec[] {
   return majorScale(keyNote).map((n, i) => ({ note: n, label: String(i + 1), kind: i === 0 ? 'root' : 'tone' }))
 }
 

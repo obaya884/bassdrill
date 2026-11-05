@@ -11,3 +11,7 @@ export const SECTION_TITLES: Record<SectionId, string> = {
   diatonic: 'ダイアトニック',
   nonDiatonic: 'ノンダイアトニック',
 }
+
+/** 節 7 のガイド文（F-303。画面定義書 13 §6） */
+export const NON_DIATONIC_GUIDE =
+  'ダイアトニックでないコードは無数にあるが、J-POP・Rock でよく使われるのはこの 8 つ。スケールから外れた音をベースラインに取り入れるとよい'

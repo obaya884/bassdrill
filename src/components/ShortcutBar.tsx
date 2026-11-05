@@ -1,14 +1,5 @@
-// 画面下部のキー割り当て 1 行（F-502。文言は画面定義書 13 §6）
-export const SHORTCUTS: readonly [string, string][] = [
-  ['J/K', '節'],
-  ['←/→', 'コード'],
-  ['Space', '答え・次'],
-  ['M', 'ペンタ'],
-  ['A', '自動送り'],
-  ['+/-', '間隔'],
-  ['N', '次のキー'],
-  ['?', 'ヘルプ'],
-]
+// 画面下部のキー割り当て 1 行と、? で開くヘルプ（F-502）
+import { SHORTCUTS } from '../app/shortcuts'
 
 export function ShortcutBar() {
   return (

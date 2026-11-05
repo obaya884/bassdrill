@@ -18,8 +18,10 @@ type State = { question: Question; phase: QuizPhase; tick: number }
 
 export function useQuizRunner({ scale, active, auto, intervalSec, rng = Math.random }: Options) {
   const rngRef = useRef(rng)
-  rngRef.current = rng
-  const [state, setState] = useState<State>(() => ({ question: nextQuestion(rngRef.current), phase: 'asking', tick: 0 }))
+  useEffect(() => {
+    rngRef.current = rng
+  }, [rng])
+  const [state, setState] = useState<State>(() => ({ question: nextQuestion(rng), phase: 'asking', tick: 0 }))
 
   // scale が変わったら新しい問題から（F-102）
   const scaleKey = scale.map((n) => `${n.letter}${n.accidental}`).join(' ')

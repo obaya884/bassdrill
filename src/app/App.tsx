@@ -33,14 +33,18 @@ function keyFromName(name: string | null): NoteName | null {
   return name ? (KEYS.find((k) => formatNote(k) === name) ?? null) : null
 }
 
-export function App({ now = new Date() }: { now?: Date }) {
+export function App({ now: nowProp }: { now?: Date }) {
+  // 描画中に Date を呼ばない（lint の purity）。開いた時刻で固定し、日付の切り替わりは次に開いたときに反映する
+  const [now] = useState(() => nowProp ?? new Date())
   const day = dayNumber(now)
   const today = todayString(now)
   const [stored] = useState(() => loadStored(today))
   const [focus, setFocus] = useState<SectionId>('key')
   // キー操作のハンドラから現在のフォーカスを読むための ref。更新関数の中で副作用を起こさない（StrictMode で二重実行されるため）
   const focusRef = useRef<SectionId>('key')
-  focusRef.current = focus
+  useEffect(() => {
+    focusRef.current = focus
+  }, [focus])
   const [keyOffset, setKeyOffset] = useState(stored.keyOffset)
   const [manualKey, setManualKey] = useState<NoteName | null>(() => keyFromName(stored.manualKey))
   const [intervalSec, setIntervalSec] = useState(stored.intervalSec)
@@ -53,6 +57,7 @@ export function App({ now = new Date() }: { now?: Date }) {
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
   const quiz = useQuizRunner({ scale, active: focus === 'quiz', auto, intervalSec })
+  const quizAdvance = quiz.advance
 
   useEffect(() => {
     saveStored({ intervalSec, date: today, keyOffset, manualKey: manualKey ? formatNote(manualKey) : null })
@@ -60,19 +65,19 @@ export function App({ now = new Date() }: { now?: Date }) {
 
   const moveFocus = useCallback((delta: number) => {
     setFocus((f) => SECTIONS[Math.min(SECTIONS.length - 1, Math.max(0, SECTIONS.indexOf(f) + delta))])
-  }, [])
+  }, [setFocus])
 
   const selectKey = useCallback((k: NoteName) => {
     setManualKey(equalsNote(k, keyForDay(day, keyOffset)) ? null : k)
     setChordIndex(NO_SELECTION)
     setFocus('key')
-  }, [day, keyOffset])
+  }, [day, keyOffset, setManualKey, setChordIndex, setFocus])
 
   const moveChord = useCallback((delta: number) => {
     const f = focusRef.current
     if (!isChordSection(f)) return
     setChordIndex((c) => ({ ...c, [f]: Math.min(CHORD_COUNT[f] - 1, Math.max(0, c[f] + delta)) }))
-  }, [])
+  }, [setChordIndex])
 
   const onAction = useCallback((a: Action) => {
     switch (a) {
@@ -89,7 +94,7 @@ export function App({ now = new Date() }: { now?: Date }) {
       case 'togglePenta': setPentaMode((m) => (m === 'major' ? 'minor' : 'major')); break
       case 'toggleAuto': setAuto((v) => !v); break
       case 'advance':
-        if (focusRef.current === 'quiz') quiz.advance()
+        if (focusRef.current === 'quiz') quizAdvance()
         break
       case 'intervalUp': setIntervalSec((s) => Math.min(MAX_INTERVAL, s + 1)); break
       case 'intervalDown': setIntervalSec((s) => Math.max(MIN_INTERVAL, s - 1)); break
@@ -97,7 +102,7 @@ export function App({ now = new Date() }: { now?: Date }) {
       case 'escape': setHelpOpen(false); break
       default: break
     }
-  }, [moveFocus, moveChord, quiz.advance])
+  }, [moveFocus, moveChord, quizAdvance, setManualKey, setKeyOffset, setChordIndex, setFocus, setPentaMode, setAuto, setIntervalSec, setHelpOpen])
   useKeyboard(onAction)
 
   const focusIndex = SECTIONS.indexOf(focus)

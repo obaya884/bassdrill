@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type NoteName, equalsNote, formatNote } from '../domain/pitch'
-import { KEYS } from '../domain/scale'
+import { KEYS, majorScale } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { CircleOfFifths } from '../components/CircleOfFifths'
 import { Section } from '../components/Section'
@@ -9,6 +9,8 @@ import { KeySection } from '../components/sections/KeySection'
 import { ScaleSection } from '../components/sections/ScaleSection'
 import { PentaSection, type PentaMode } from '../components/sections/PentaSection'
 import { SeventhSection, DiatonicSection, NonDiatonicSection } from '../components/sections/chordSections'
+import { QuizSection } from '../components/sections/QuizSection'
+import { useQuizRunner } from './useQuizRunner'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { useKeyboard, type Action } from './useKeyboard'
 import { loadStored, saveStored } from './storage'
@@ -36,6 +38,9 @@ export function App({ now = new Date() }: { now?: Date }) {
   const today = todayString(now)
   const [stored] = useState(() => loadStored(today))
   const [focus, setFocus] = useState<SectionId>('key')
+  // キー操作のハンドラから現在のフォーカスを読むための ref。更新関数の中で副作用を起こさない（StrictMode で二重実行されるため）
+  const focusRef = useRef<SectionId>('key')
+  focusRef.current = focus
   const [keyOffset, setKeyOffset] = useState(stored.keyOffset)
   const [manualKey, setManualKey] = useState<NoteName | null>(() => keyFromName(stored.manualKey))
   const [intervalSec, setIntervalSec] = useState(stored.intervalSec)
@@ -43,7 +48,11 @@ export function App({ now = new Date() }: { now?: Date }) {
   const [pentaMode, setPentaMode] = useState<PentaMode>('major')
   const [chordIndex, setChordIndex] = useState<Record<ChordSectionId, number>>(NO_SELECTION)
 
+  const [auto, setAuto] = useState(false)
+
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
+  const scale = useMemo(() => majorScale(currentKey), [currentKey])
+  const quiz = useQuizRunner({ scale, active: focus === 'quiz', auto, intervalSec })
 
   useEffect(() => {
     saveStored({ intervalSec, date: today, keyOffset, manualKey: manualKey ? formatNote(manualKey) : null })
@@ -60,12 +69,9 @@ export function App({ now = new Date() }: { now?: Date }) {
   }, [day, keyOffset])
 
   const moveChord = useCallback((delta: number) => {
-    setFocus((f) => {
-      if (isChordSection(f)) {
-        setChordIndex((c) => ({ ...c, [f]: Math.min(CHORD_COUNT[f] - 1, Math.max(0, c[f] + delta)) }))
-      }
-      return f
-    })
+    const f = focusRef.current
+    if (!isChordSection(f)) return
+    setChordIndex((c) => ({ ...c, [f]: Math.min(CHORD_COUNT[f] - 1, Math.max(0, c[f] + delta)) }))
   }, [])
 
   const onAction = useCallback((a: Action) => {
@@ -81,13 +87,17 @@ export function App({ now = new Date() }: { now?: Date }) {
       case 'next': moveChord(1); break
       case 'prev': moveChord(-1); break
       case 'togglePenta': setPentaMode((m) => (m === 'major' ? 'minor' : 'major')); break
+      case 'toggleAuto': setAuto((v) => !v); break
+      case 'advance':
+        if (focusRef.current === 'quiz') quiz.advance()
+        break
       case 'intervalUp': setIntervalSec((s) => Math.min(MAX_INTERVAL, s + 1)); break
       case 'intervalDown': setIntervalSec((s) => Math.max(MIN_INTERVAL, s - 1)); break
       case 'help': setHelpOpen((h) => !h); break
       case 'escape': setHelpOpen(false); break
-      default: break // advance / toggleAuto は Task 13 で配線
+      default: break
     }
-  }, [moveFocus, moveChord])
+  }, [moveFocus, moveChord, quiz.advance])
   useKeyboard(onAction)
 
   const focusIndex = SECTIONS.indexOf(focus)
@@ -112,6 +122,7 @@ export function App({ now = new Date() }: { now?: Date }) {
             {id === 'scale' && <ScaleSection keyNote={currentKey} />}
             {id === 'penta' && <PentaSection keyNote={currentKey} mode={pentaMode} />}
             {id === 'seventh' && <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} />}
+            {id === 'quiz' && <QuizSection question={quiz.question} phase={quiz.phase} scale={scale} auto={auto} intervalSec={intervalSec} />}
             {id === 'diatonic' && <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} />}
             {id === 'nonDiatonic' && <NonDiatonicSection keyNote={currentKey} selected={chordIndex.nonDiatonic} />}
           </Section>

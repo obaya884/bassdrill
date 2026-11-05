@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { StrictMode } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
@@ -100,5 +101,48 @@ describe('App: コードとペンタの節', () => {
     await userEvent.keyboard('n')
     await userEvent.keyboard('jjj')
     expect(focused().getByRole('row', { selected: true })).toHaveTextContent('IM7')
+  })
+})
+
+describe('App: 度数の節', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('節 5 で Space が答えを出し、節 1 では何も起きない', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard(' ')
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+    await userEvent.keyboard('jjjj') // 節 5
+    expect(screen.getByText('節 5 / 7 度数')).toBeInTheDocument()
+    expect(screen.getByTestId('quiz-question')).toHaveTextContent(/から見/)
+    await userEvent.keyboard(' ')
+    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+    await userEvent.keyboard(' ')
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('A で自動送りが切り替わり、+/- で間隔が 2〜15 に収まる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('jjjj')
+    expect(screen.getByText('自動送り: オフ')).toBeInTheDocument()
+    await userEvent.keyboard('a')
+    expect(screen.getByText('自動送り: オン 5 秒')).toBeInTheDocument()
+    for (let i = 0; i < 20; i++) await userEvent.keyboard('-')
+    expect(screen.getByText('自動送り: オン 2 秒')).toBeInTheDocument()
+    for (let i = 0; i < 20; i++) await userEvent.keyboard('=')
+    expect(screen.getByText('自動送り: オン 15 秒')).toBeInTheDocument()
+    await userEvent.keyboard('a')
+    expect(screen.getByText('自動送り: オフ')).toBeInTheDocument()
+  })
+})
+
+describe('App: StrictMode', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('StrictMode でも → は 1 つだけ進み、Space は 1 段だけ進む', async () => {
+    render(<StrictMode><App now={NOW} /></StrictMode>)
+    await userEvent.keyboard('jjj{ArrowRight}')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Im7')
+    await userEvent.keyboard('j') // 節 5
+    await userEvent.keyboard(' ')
+    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
   })
 })

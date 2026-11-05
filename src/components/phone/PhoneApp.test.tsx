@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '../../app/App'
 import { focused } from '../../test/focused'
@@ -59,5 +59,23 @@ describe('PhoneApp: 骨組み（F-601・F-602）', () => {
     expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
     await userEvent.keyboard('?')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: スワイプ（F-601）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  it('帯の上で左にスワイプすると次の節へ、右で前の節へ', () => {
+    render(<App now={NOW} />)
+    const strip = screen.getByTestId('page-strip')
+    fireEvent.pointerDown(strip, { clientX: 300, clientY: 300, pointerId: 1 })
+    fireEvent.pointerMove(strip, { clientX: 200, clientY: 305, pointerId: 1 })
+    fireEvent.pointerUp(strip, { clientX: 200, clientY: 305, pointerId: 1 })
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    fireEvent.pointerDown(strip, { clientX: 100, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(strip, { clientX: 200, clientY: 300, pointerId: 1 })
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
   })
 })

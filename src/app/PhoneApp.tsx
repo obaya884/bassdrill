@@ -1,4 +1,5 @@
 // スマホ表示（F-601〜F-606。画面定義書 13 §8）: ヘッダー → 点 → 7 節を横に並べた帯 → 下部バー
+import { useCallback, useState } from 'react'
 import { formatNote } from '../domain/pitch'
 import { PhoneHeader } from '../components/phone/PhoneHeader'
 import { PageDots } from '../components/phone/PageDots'
@@ -10,12 +11,32 @@ import { SeventhSection, DiatonicSection, NonDiatonicSection } from '../componen
 import { QuizSection } from '../components/sections/QuizSection'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { useKeyboard } from './useKeyboard'
+import { useSwipe } from './useSwipe'
 import { type DrillState } from './useDrillState'
 
 export function PhoneApp({ state }: { state: DrillState }) {
   const { focus, currentKey, manualKey, keyOffset, chordIndex, pentaMode, quiz, scale, auto, intervalSec } = state
   useKeyboard(state.onAction)
   const index = SECTIONS.indexOf(focus)
+
+  // 帯のページ送り（13 §8.5）。追随中は dragX で帯をずらし、離したら 200ms で収める
+  const [dragX, setDragX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const onDrag = useCallback((dx: number) => {
+    setDragging(true)
+    setDragX(dx)
+  }, [])
+  const onRelease = useCallback(() => {
+    setDragging(false)
+    setDragX(0)
+  }, [])
+  const swipe = useSwipe({
+    onSwipeLeft: () => state.moveFocus(1),
+    onSwipeRight: () => state.moveFocus(-1),
+    ignoreWithin: '[data-fretboard-scroll]',
+    onDrag,
+    onRelease,
+  })
 
   const body = (id: SectionId) => {
     switch (id) {
@@ -36,8 +57,9 @@ export function PhoneApp({ state }: { state: DrillState }) {
       <div className="flex-1 overflow-hidden">
         <div
           data-testid="page-strip"
-          className="flex h-full transition-transform duration-200 ease-out"
-          style={{ transform: `translateX(-${index * 100}%)`, touchAction: 'pan-y' }}
+          className={`flex h-full ${dragging ? '' : 'transition-transform duration-200 ease-out'}`}
+          style={{ transform: `translateX(calc(-${index * 100}% + ${dragX}px))`, touchAction: 'pan-y' }}
+          {...swipe}
         >
           {SECTIONS.map((id) => (
             <section

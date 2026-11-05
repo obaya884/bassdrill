@@ -1,6 +1,6 @@
 // 度数の問題カード（F-403。画面定義書 13 §2.1・§8.2）: 問題文・答え・右下の「答え／次」ボタン。カードの他の場所にハンドラは付けない
 import { type NoteName } from '../domain/pitch'
-import { answerText, questionText, type Question } from '../domain/quiz'
+import { answerNote, answerText, baseNote, questionSegments, type Question } from '../domain/quiz'
 import { markersFor } from '../domain/fretboard'
 import { Fretboard } from './Fretboard'
 import { FretboardScroller } from './phone/FretboardScroller'
@@ -12,8 +12,8 @@ export function QuizCard({ question, phase, scale, onAdvance, compact = false }:
   const answered = phase === 'answered'
   const markers = answered
     ? markersFor([
-        { note: scale[question.baseIndex], label: '基準', kind: 'root' },
-        { note: scale[question.targetIndex], label: '答え', kind: 'tone' },
+        { note: baseNote(question, scale), label: '基準', kind: 'root' },
+        { note: answerNote(question, scale), label: '答え', kind: 'tone' },
       ])
     : []
   const fretboard = <Fretboard markers={markers} />
@@ -21,7 +21,9 @@ export function QuizCard({ question, phase, scale, onAdvance, compact = false }:
     <div className="space-y-4">
       <div data-testid="quiz-card" className={`relative rounded-2xl bg-surface border border-line flex flex-col items-center justify-center select-none ${compact ? 'px-3 pt-6 pb-16 min-h-[180px]' : 'px-6 pt-10 pb-20 min-h-[240px]'}`}>
         <div data-testid="quiz-question" className={`font-semibold leading-tight text-center ${compact ? 'text-[32px]' : 'text-[56px]'}`}>
-          {questionText(question, scale)}
+          {questionSegments(question, scale).map((s, i) => (
+            <span key={i} className={s.noWrap ? 'whitespace-nowrap' : undefined}>{s.text}</span>
+          ))}
         </div>
         {/* 答えの行は出題中も場所を確保し、答え表示でカードの高さが変わらないようにする（F-102: 見ている場所を動かさない） */}
         <div

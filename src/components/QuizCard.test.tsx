@@ -6,13 +6,15 @@ import { majorScale } from '../domain/scale'
 import { QuizCard } from './QuizCard'
 
 const C = majorScale(note('C'))
-const q = { kind: 'degreeToNote' as const, baseIndex: 4, targetIndex: 0 }
+const q = { kind: 'degreeToNote' as const, baseIndex: 4, interval: '4' as const }
 
 describe('QuizCard', () => {
   it('出題中は「答え」、答え表示中は「次」。押すたびに onAdvance を 1 回', async () => {
     const onAdvance = vi.fn()
     const { rerender } = render(<QuizCard question={q} phase="asking" scale={C} onAdvance={onAdvance} />)
-    expect(screen.getByTestId('quiz-question')).toHaveTextContent('G から見て 4 度は？')
+    expect(screen.getByTestId('quiz-question')).toHaveTextContent('G から見て 4 度（11 度）は？')
+    // 度数の表記は途中で折り返さない
+    expect(screen.getByText('4 度（11 度）').className).toMatch(/whitespace-nowrap/)
     expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '答え' }))
     expect(onAdvance).toHaveBeenCalledTimes(1)

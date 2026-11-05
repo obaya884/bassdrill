@@ -16,7 +16,7 @@ describe('スマホ用の部品', () => {
     expect(screen.getByText('F♯').closest('[data-outside]')).toHaveAttribute('data-outside', 'true')
   })
   it('通常のコード表は全行にコード度数を出す', () => {
-    render(<ChordTable chords={nonDiatonicChords(note('C'))} selected={1} />)
+    render(<ChordTable chords={nonDiatonicChords(note('C'))} selected={1} onSelect={() => {}} />)
     expect(screen.getAllByText('♭7').length).toBeGreaterThan(1)
   })
   it('FretboardScroller は横スクロールの箱で、指板のスワイプ除外の印を持つ', () => {

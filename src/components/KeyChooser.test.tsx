@@ -48,13 +48,14 @@ describe('KeyChooser', () => {
     expect(g.style.width).toBe('56px')
     expect(within(circle).getByTestId('circle-center')).toHaveTextContent('G')
     expect(within(circle).getByRole('button', { name: 'D' })).not.toHaveAttribute('data-today')
-    // 札は 1 つだけ。C（12 時）の真下＝円の中心から 72px 上に中心が来る
+    // 札は 1 つだけ。C（12 時）のボタンの内縁に 2px 重なる位置（ボタン中心から 24 − 2 = 22px 内側）に中心が来る
     const caption = within(circle).getByTestId('pick-caption')
     expect(caption).toHaveTextContent('pick!!')
     expect(within(circle).getAllByTestId('pick-caption')).toHaveLength(1)
     const cx = parseFloat(c.style.left) + parseFloat(c.style.width) / 2
     const cy = parseFloat(c.style.top) + parseFloat(c.style.width) / 2
     expect(Math.abs(parseFloat(caption.style.left) - cx)).toBeLessThan(0.5)
-    expect(parseFloat(caption.style.top)).toBeCloseTo(cy + (122 - 72), 0)
+    expect(parseFloat(caption.style.top)).toBeCloseTo(cy + 22, 0)
+    expect(caption.className).toMatch(/rounded-full/)
   })
 })

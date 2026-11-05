@@ -8,8 +8,8 @@ const SIZE = 300
 const R = 122
 const BUTTON = 48
 const BUTTON_CURRENT = 56
-/** pick!! の札の中心の、円の中心からの距離。ボタンの内縁（94〜98px）とも中央のキー名（半幅約 28px）とも重ならない */
-const R_CAPTION = 72
+/** pick!! の丸札がボタンの内縁に重なる量（px）。ボタンに貼り付いて見せる */
+const CAPTION_OVERLAP = 2
 
 type Props = { current: NoteName; today: NoteName; onSelect(k: NoteName): void; onNext(): void }
 
@@ -33,12 +33,13 @@ export function KeyChooser({ current, today, onSelect, onNext }: Props) {
           const isToday = equalsNote(k, today)
           const d = isCurrent ? BUTTON_CURRENT : BUTTON
           const fill = isCurrent ? 'bg-accent text-bg' : 'bg-surface-raised text-ink hover:bg-line'
+          const rCaption = R - d / 2 + CAPTION_OVERLAP
           const caption = isToday && (
             <span
               data-testid="pick-caption"
               aria-hidden="true"
-              className="absolute -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold tracking-[0.04em] text-accent pointer-events-none select-none"
-              style={{ left: SIZE / 2 + R_CAPTION * Math.cos(angle), top: SIZE / 2 + R_CAPTION * Math.sin(angle) }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg border border-accent text-accent text-[10px] font-bold leading-none px-1.5 py-0.5 pointer-events-none select-none"
+              style={{ left: SIZE / 2 + rCaption * Math.cos(angle), top: SIZE / 2 + rCaption * Math.sin(angle) }}
             >
               pick!!
             </span>

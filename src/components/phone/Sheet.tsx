@@ -1,4 +1,4 @@
-// 画面下から出るシートの外枠（画面定義書 13 §8.6）。背景タップで閉じる。Escape は PhoneApp のキー入力が処理する
+// 画面下から出るシートの外枠（画面定義書 13 §8.6）。背景タップで閉じる（キーボードは使わない。F-502）
 import { type ReactNode } from 'react'
 
 export function Sheet({ label, onClose, children }: { label: string; onClose(): void; children: ReactNode }) {
@@ -11,7 +11,6 @@ export function Sheet({ label, onClose, children }: { label: string; onClose(): 
         className="w-full bg-surface rounded-t-2xl border-t border-line px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-[18px] font-semibold mb-4">{label}</h3>
         {children}
       </div>
     </div>

@@ -7,7 +7,7 @@ const R = 28
 
 export function CircleOfFifths({ current, onSelect }: { current: NoteName; onSelect: (key: NoteName) => void }) {
   return (
-    <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }} aria-label="5 度圏">
+    <div role="group" className="relative shrink-0" style={{ width: SIZE, height: SIZE }} aria-label="5 度圏">
       {KEYS.map((k, i) => {
         const angle = (i / 12) * 2 * Math.PI - Math.PI / 2
         const x = SIZE / 2 + R * Math.cos(angle)

@@ -1,189 +1,149 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { StrictMode } from 'react'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, within, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { App } from './App'
-import { focused } from '../test/focused'
 import { setViewport } from '../test/viewport'
+import { STORAGE_KEY } from './storage'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
+const section = (id: string) => within(document.querySelector(`#section-${id}`) as HTMLElement)
+const openChooser = () => userEvent.click(screen.getByTestId('current-key'))
 
-describe('App', () => {
-  beforeEach(() => localStorage.clear())
+describe('App（PC 表示）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(1280)
+  })
 
-  it('J/K で節が移り、現在地が更新される', async () => {
+  it('6 節が番号なしで縦に並び、ショートカット行・ヘルプ・現在地・k/12 が無い', () => {
     render(<App now={NOW} />)
-    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
-    await userEvent.keyboard('j')
-    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
-    await userEvent.keyboard('k')
-    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
-    await userEvent.keyboard('k')
-    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument() // 先頭で止まる
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'メジャースケール', 'ペンタトニック', 'セブンスコード', '度数', 'ダイアトニック', 'ノンダイアトニック',
+    ])
+    expect(screen.queryByText(/J\/K/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/節 \d/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
+    expect(document.querySelector('[data-focused]')).toBeNull()
   })
-  it('今日のキーが表示される', () => {
+  it('今日のキーがヘッダーに出て、5 度圏がある', () => {
     render(<App now={NOW} />)
-    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(dayNumber(NOW))))
-    expect(screen.getByText('1 / 12')).toBeInTheDocument()
-  })
-  it('N で次のキーに進み k/12 が増える。12 回で元に戻る', async () => {
-    render(<App now={NOW} />)
-    const first = screen.getByTestId('current-key').textContent
-    await userEvent.keyboard('n')
-    expect(screen.getByText('2 / 12')).toBeInTheDocument()
-    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(dayNumber(NOW), 1)))
-    for (let i = 0; i < 11; i++) await userEvent.keyboard('n')
-    expect(screen.getByTestId('current-key').textContent).toBe(first)
-    expect(screen.getByText('1 / 12')).toBeInTheDocument()
-  })
-  it('5 度圏のクリックでキーが変わり、N で手の選択は解除される', async () => {
-    render(<App now={NOW} />)
-    await userEvent.click(screen.getByRole('button', { name: 'E♭' }))
-    expect(screen.getByTestId('current-key').textContent).toBe('E♭')
-    expect(screen.getByText('手で選んだキー')).toBeInTheDocument()
-    await userEvent.keyboard('n')
-    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(dayNumber(NOW), 1)))
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
+    expect(screen.getByLabelText('5 度圏')).toBeInTheDocument()
   })
-  it('状態は localStorage に残り、開き直しても続きから', async () => {
-    const { unmount } = render(<App now={NOW} />)
-    await userEvent.keyboard('nn')
-    unmount()
+  it('ヘッダーのキーでポップオーバーが開き、E♭ を選ぶと閉じて手で選んだキーになる', async () => {
     render(<App now={NOW} />)
-    expect(screen.getByText('3 / 12')).toBeInTheDocument()
+    await openChooser()
+    const pop = screen.getByRole('dialog', { name: 'キーを選ぶ' })
+    await userEvent.click(within(pop).getByRole('button', { name: 'E♭' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent('E♭')
+    expect(screen.getByText('手で選んだキー')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).manualKey).toBe('E♭')
   })
-  it('Space はページをスクロールさせない（preventDefault）', () => {
+  it('ポップオーバーの外をクリックすると閉じる', async () => {
+    render(<App now={NOW} />)
+    await openChooser()
+    await userEvent.click(screen.getByTestId('popover-backdrop'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+  it('ポップオーバーの「次のキー」で明日のキーに進み、節の要素は作り直されない', async () => {
+    render(<App now={NOW} />)
+    const before = document.querySelector('#section-quiz')
+    await openChooser()
+    await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 1)))
+    expect(document.querySelector('#section-quiz')).toBe(before)
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).keyOffset).toBe(1)
+  })
+  it('5 度圏のクリックでも選べる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(within(screen.getByLabelText('5 度圏')).getByRole('button', { name: 'A' }))
+    expect(screen.getByTestId('current-key')).toHaveTextContent('A')
+  })
+  it('コード表の行クリックで選び、キーが変わると先頭に戻る', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(section('seventh').getByText('Im7♭5'))
+    expect(section('seventh').getByRole('row', { selected: true })).toHaveTextContent('Im7♭5')
+    await openChooser()
+    await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    expect(section('seventh').getByRole('row', { selected: true })).toHaveTextContent('IM7')
+  })
+  it('度数カードの 答え → 次 で進み、問題文のクリックでは進まない（StrictMode）', async () => {
+    render(<StrictMode><App now={NOW} /></StrictMode>)
+    const q = section('quiz')
+    await userEvent.click(q.getByTestId('quiz-question'))
+    expect(q.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+    await userEvent.click(q.getByRole('button', { name: '答え' }))
+    expect(q.getByTestId('quiz-answer')).toBeInTheDocument()
+    await userEvent.click(q.getByRole('button', { name: '次' }))
+    expect(q.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('ペンタのボタンで切り替わる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(section('penta').getByRole('button', { name: 'メジャー / マイナー' }))
+    expect(section('penta').getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
+  })
+  it('Space を押してもページの既定動作を止めない', () => {
     render(<App now={NOW} />)
     const ev = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
     window.dispatchEvent(ev)
-    expect(ev.defaultPrevented).toBe(true)
+    expect(ev.defaultPrevented).toBe(false)
   })
-  it('? でヘルプが開き、Esc で閉じる', async () => {
+  it('状態は localStorage に残り、開き直しても続きから', async () => {
+    const { unmount } = render(<App now={NOW} />)
+    await openChooser()
+    await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    await openChooser()
+    await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    unmount()
     render(<App now={NOW} />)
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    await userEvent.keyboard('?')
-    expect(screen.getByRole('dialog', { name: 'キー操作' })).toBeInTheDocument()
-    await userEvent.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-})
-
-describe('App: コードとペンタの節', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('節 4 で → ← がコードを送り、端で止まる', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard('jjj') // 節 4
-    expect(screen.getByText('節 4 / 7 セブンスコード')).toBeInTheDocument()
-    await userEvent.keyboard('{ArrowLeft}')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('M7')
-    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('m7♭5')
-  })
-  it('節 1 では → を押しても何も起きない', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard('{ArrowRight}')
-    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
-  })
-  it('節 3 で M がペンタを切り替える', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard('jj')
-    expect(screen.getByRole('heading', { name: /メジャーペンタ$/ })).toBeInTheDocument()
-    await userEvent.keyboard('m')
-    expect(screen.getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
-  })
-  it('キーが変わるとコードの選択は先頭に戻る', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard('jjj{ArrowRight}{ArrowRight}')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('I7')
-    await userEvent.keyboard('n')
-    await userEvent.keyboard('jjj')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('IM7')
-  })
-})
-
-describe('App: 度数の節', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('節 5 で Space が答えを出し、節 1 では何も起きない', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard(' ')
-    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
-    await userEvent.keyboard('jjjj') // 節 5
-    expect(screen.getByText('節 5 / 7 度数')).toBeInTheDocument()
-    expect(screen.getByTestId('quiz-question')).toHaveTextContent(/から見/)
-    await userEvent.keyboard(' ')
-    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
-    await userEvent.keyboard(' ')
-    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
-  })
-  it('A で自動送りが切り替わり、+/- で間隔が 2〜15 に収まる', async () => {
-    render(<App now={NOW} />)
-    await userEvent.keyboard('jjjj')
-    expect(screen.getByText('自動送り: オフ')).toBeInTheDocument()
-    await userEvent.keyboard('a')
-    expect(screen.getByText('自動送り: オン 5 秒')).toBeInTheDocument()
-    for (let i = 0; i < 20; i++) await userEvent.keyboard('-')
-    expect(screen.getByText('自動送り: オン 2 秒')).toBeInTheDocument()
-    for (let i = 0; i < 20; i++) await userEvent.keyboard('=')
-    expect(screen.getByText('自動送り: オン 15 秒')).toBeInTheDocument()
-    await userEvent.keyboard('a')
-    expect(screen.getByText('自動送り: オフ')).toBeInTheDocument()
-  })
-})
-
-describe('App: StrictMode', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('StrictMode でも → は 1 つだけ進み、Space は 1 段だけ進む', async () => {
-    render(<StrictMode><App now={NOW} /></StrictMode>)
-    await userEvent.keyboard('jjj{ArrowRight}')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Im7')
-    await userEvent.keyboard('j') // 節 5
-    await userEvent.keyboard(' ')
-    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 2)))
   })
 })
 
 describe('App: 開いたまま日付をまたぐ', () => {
   beforeEach(() => {
     localStorage.clear()
+    setViewport(1280)
     vi.useFakeTimers()
   })
   afterEach(() => vi.useRealTimers())
 
-  it('0:00 を過ぎると今日のキーが切り替わり、位置と手の選択が戻る', () => {
+  it('0:00 を過ぎると今日のキーに切り替わり、位置と手の選択が戻る', () => {
     vi.setSystemTime(new Date('2026-11-05T23:59:30+09:00'))
     render(<App now={new Date()} />)
-    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(20762)))
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(20762)))
     act(() => {
       vi.advanceTimersByTime(60_000)
     })
-    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(20763)))
-    expect(screen.getByText('1 / 12')).toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(20763)))
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
   })
 })
 
 describe('App: 表示モードの切り替え（F-606）', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('幅が変わると木が切り替わり、出題とコード選択を引き継ぐ', async () => {
+  beforeEach(() => {
+    localStorage.clear()
     setViewport(1280)
+  })
+
+  it('幅が変わると木が切り替わり、出題とコード選択とキーを引き継ぐ', async () => {
     render(<App now={NOW} />)
-    await userEvent.keyboard('jjj{ArrowRight}{ArrowRight}') // 節 4、I7
-    await userEvent.keyboard('j ') // 節 5、答え表示
-    const q = screen.getByTestId('quiz-question').textContent
+    await userEvent.click(section('seventh').getByText(/^C7$/))
+    await userEvent.click(section('quiz').getByRole('button', { name: '答え' }))
+    const q = section('quiz').getByTestId('quiz-question').textContent
     act(() => setViewport(390))
     expect(screen.getByTestId('page-strip')).toBeInTheDocument()
-    expect(screen.queryByText(/J\/K/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('5 度圏')).not.toBeInTheDocument()
     act(() => setViewport(1280))
     expect(screen.queryByTestId('page-strip')).not.toBeInTheDocument()
-    expect(screen.getByTestId('quiz-question').textContent).toBe(q)
-    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
-    await userEvent.keyboard('k')
-    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('I7')
+    expect(section('quiz').getByTestId('quiz-question').textContent).toBe(q)
+    expect(section('quiz').getByTestId('quiz-answer')).toBeInTheDocument()
+    expect(section('seventh').getByRole('row', { selected: true })).toHaveTextContent('I7')
   })
 })

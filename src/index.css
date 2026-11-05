@@ -1,1 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 @import "tailwindcss";
+
+/* 画面定義書 13 §5 のデザイントークン。値を変えるときは 13 を先に直す */
+@theme {
+  --color-bg: #0e0f12;
+  --color-surface: #16181d;
+  --color-surface-raised: #20232a;
+  --color-line: #2c3038;
+  --color-ink: #ececf1;
+  --color-muted: #8b8f9a;
+  --color-accent: #f2b544;
+  --color-root: #5ad1f0;
+  --color-outside: #f06a6a;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

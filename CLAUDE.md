@@ -39,20 +39,21 @@ npx tsc -p tsconfig.app.json --noEmit   # 型検査だけ
 
 ```
 src/domain/      音楽理論の純粋関数。I/O・Date・Math.random を直接呼ばず引数で受ける。React を知らない
-src/components/  指板（SVG）・5 度圏・コード表・節の外枠・各節。ロジックを持たず domain の結果を描く。phone/ はスマホ専用の部品（ヘッダー・点・下部バー・シート・指板のスクロール箱・度数カード）
-src/app/         App.tsx（表示モードで DesktopApp か PhoneApp を描くだけ）・useDrillState（状態と操作。両方の木が共有）・useDisplayMode（幅 1024 未満か pointer: coarse）・useKeyboard（keydown → Action）・useSwipe（Pointer Events のスワイプ／タップ）・useQuizRunner・storage・sections
+src/components/  指板（SVG）・5 度圏・コード表・キー選択の中身（KeyChooser）・PC のポップオーバー・度数カード（QuizCard）・各節。ロジックを持たず domain の結果を描く。phone/ はスマホ専用の部品（ヘッダー・点・シート・指板のスクロール箱）
+src/app/         App.tsx（表示モードで DesktopApp か PhoneApp を描くだけ）・useDrillState（状態と操作。両方の木が共有）・useDisplayMode（幅 1024 未満か pointer: coarse）・useSwipe（Pointer Events のスワイプ／タップ）・useQuizRunner・storage・sections
 ```
 
 - 依存方向は domain ← components ← app
 - **理論の正しさは domain のテスト（12 キー全件の期待値表）で守る**（N-04）。テストの無い導出を画面に出さない。音名の綴り（F-105・F-305。ダブル変化記号の読み替え 12 箇所）はテストの期待値に明示してある
 - 今日のキーは「12 日ブロックごとの順列」から通算日で引く（F-101）。日付は Asia/Tokyo の暦日。保存は要らない
-- **キー操作のハンドラは setState の更新関数の中で副作用を起こさない**。StrictMode で更新関数が二重実行され、→ で 2 つ進んだことがある。フォーカスは ref で読む（`src/app/useDrillState.ts`）
-- localStorage に置くのは F-505 の 4 項目だけ。壊れていても別の日付でも既定値で動き、エラーにしない
-- 外れ音の強調（赤・下線）は節 7 だけ（F-303）。節 4・6 ではスケール外の音を含むコードでも強調しない
-- **PC とスマホは両方の木を描いて片方を隠すのではなく、どちらか一方だけを描く**（F-606）。状態は `useDrillState` にあるので切り替えで失わない。スマホではキーを変えても節に留まる（F-604）、PC では節 1 へ戻る
+- **キーボードショートカットは持たない**（F-502）。`keydown` を購読しない。操作の入口はヘッダーのキー（キー選択の面）・5 度圏・コード表の行・度数カードのボタン・ペンタのボタン・スマホの点と ‹ › とスワイプだけ
+- **イベントハンドラは setState の更新関数の中で副作用を起こさない**。StrictMode で更新関数が二重実行され、2 つ進んだことがある
+- localStorage に置くのは F-505 の 3 項目（日付・順列の位置・手で選んだキー）だけ。壊れていても別の日付でも既定値で動き、エラーにしない。古い `intervalSec` は読まない
+- 外れ音の強調（赤・下線）はノンダイアトニックの節だけ（F-303）。セブンス・ダイアトニックではスケール外の音を含むコードでも強調しない
+- **PC とスマホは両方の木を描いて片方を隠すのではなく、どちらか一方だけを描く**（F-606）。状態は `useDrillState` にあるので切り替えで失わない。キーを変えても見ている場所は動かさない（PC のスクロール位置・スマホの節）。節は 6 つで番号を付けない。PC は 6 節を等倍で縦に並べ、フォーカスの概念を持たない
 - スワイプは Pointer Events で受ける（jsdom は Touch を作れない）。指板の箱 `[data-fretboard-scroll]` の中で始まったタッチはページ送りにしない。追随や iOS のパン衝突は jsdom で再現できないので実機で見る
 - テストの既定ビューポートは幅 1280・タッチなし（`src/test/setup.ts`）。スマホの木を描くテストは `setViewport(390)` を明示する
-- Testing Library は `globals: false` なので `src/test/setup.ts` で `cleanup` を明示している。コード表は 3 節が同時に描かれるので、テストでは `section[data-focused="true"]` に絞って要素を探す
+- Testing Library は `globals: false` なので `src/test/setup.ts` で `cleanup` を明示している。コード表は 3 節が同時に描かれるので、テストでは PC は `#section-<id>`、スマホは `section[data-focused="true"]`（`src/test/focused.ts`）に絞って要素を探す
 
 ## 開発の進め方
 

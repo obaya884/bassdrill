@@ -2,8 +2,8 @@
 import { type NoteName, equalsNote, formatNote } from '../domain/pitch'
 import { KEYS } from '../domain/scale'
 
-const SIZE = 80
-const R = 28
+const SIZE = 72
+const R = 25
 
 export function CircleOfFifths({ current, onSelect }: { current: NoteName; onSelect: (key: NoteName) => void }) {
   return (

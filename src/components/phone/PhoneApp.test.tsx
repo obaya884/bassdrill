@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { StrictMode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '../../app/App'
@@ -77,5 +78,56 @@ describe('PhoneApp: スワイプ（F-601）', () => {
     fireEvent.pointerDown(strip, { clientX: 100, clientY: 300, pointerId: 1 })
     fireEvent.pointerUp(strip, { clientX: 200, clientY: 300, pointerId: 1 })
     expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: 節の中身（F-602・F-603）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  const tap = (el: Element, x = 100, y = 100) => {
+    fireEvent.pointerDown(el, { clientX: x, clientY: y, pointerId: 1 })
+    fireEvent.pointerUp(el, { clientX: x + 2, clientY: y + 1, pointerId: 1 })
+  }
+
+  it('度数カードのタップで答えが出て、もう一度で次へ（StrictMode でも 1 段）', async () => {
+    render(<StrictMode><App now={NOW} /></StrictMode>)
+    for (let i = 0; i < 4; i++) await next()
+    const card = screen.getByTestId('quiz-card')
+    tap(card)
+    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+    tap(card)
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('度数カード以外のタップでは答えは出ない', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 4; i++) await next()
+    tap(focused().getByRole('heading', { level: 2 }))
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('指板の箱の中で始めた横の動きでは節が移らない', async () => {
+    render(<App now={NOW} />)
+    await next() // 節 2（指板あり）
+    const box = focused().getByTestId('fretboard-scroll')
+    fireEvent.pointerDown(box, { clientX: 300, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(box, { clientX: 100, clientY: 300, pointerId: 1 })
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+  })
+  it('◀ ▶ でコードが送られ、行タップで選べる', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 3; i++) await next() // 節 4
+    await userEvent.click(screen.getByRole('button', { name: '▶' }))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Cm7')
+    await userEvent.click(focused().getByText('Cm7♭5'))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Cm7♭5')
+    await userEvent.click(screen.getByRole('button', { name: '◀' }))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('C7')
+  })
+  it('節 3 の メジャー / マイナー でペンタが切り替わる', async () => {
+    render(<App now={NOW} />)
+    await next(); await next()
+    await userEvent.click(screen.getByRole('button', { name: 'メジャー / マイナー' }))
+    expect(focused().getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
   })
 })

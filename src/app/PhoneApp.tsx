@@ -8,14 +8,14 @@ import { KeySection } from '../components/sections/KeySection'
 import { ScaleSection } from '../components/sections/ScaleSection'
 import { PentaSection } from '../components/sections/PentaSection'
 import { SeventhSection, DiatonicSection, NonDiatonicSection } from '../components/sections/chordSections'
-import { QuizSection } from '../components/sections/QuizSection'
+import { PhoneQuizCard, QUIZ_CARD_SELECTOR } from '../components/phone/PhoneQuizCard'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { useKeyboard } from './useKeyboard'
 import { useSwipe } from './useSwipe'
 import { type DrillState } from './useDrillState'
 
 export function PhoneApp({ state }: { state: DrillState }) {
-  const { focus, currentKey, manualKey, keyOffset, chordIndex, pentaMode, quiz, scale, auto, intervalSec } = state
+  const { focus, currentKey, manualKey, keyOffset, chordIndex, pentaMode, quiz, scale, auto, intervalSec, selectChord } = state
   useKeyboard(state.onAction)
   const index = SECTIONS.indexOf(focus)
 
@@ -30,9 +30,15 @@ export function PhoneApp({ state }: { state: DrillState }) {
     setDragging(false)
     setDragX(0)
   }, [])
+  // 度数カードの上で始まって 48px 未満で終わったタッチだけ「答え / 次」（F-602）
+  const quizAdvance = quiz.advance
+  const onTap = useCallback((target: Element) => {
+    if (target.closest(QUIZ_CARD_SELECTOR) && !target.closest('button')) quizAdvance()
+  }, [quizAdvance])
   const swipe = useSwipe({
     onSwipeLeft: () => state.moveFocus(1),
     onSwipeRight: () => state.moveFocus(-1),
+    onTap,
     ignoreWithin: '[data-fretboard-scroll]',
     onDrag,
     onRelease,
@@ -41,12 +47,12 @@ export function PhoneApp({ state }: { state: DrillState }) {
   const body = (id: SectionId) => {
     switch (id) {
       case 'key': return <KeySection keyNote={currentKey} manual={manualKey !== null} />
-      case 'scale': return <ScaleSection keyNote={currentKey} />
-      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} />
-      case 'seventh': return <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} />
-      case 'quiz': return <QuizSection question={quiz.question} phase={quiz.phase} scale={scale} auto={auto} intervalSec={intervalSec} />
-      case 'diatonic': return <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} />
-      case 'nonDiatonic': return <NonDiatonicSection keyNote={currentKey} selected={chordIndex.nonDiatonic} />
+      case 'scale': return <ScaleSection keyNote={currentKey} compact />
+      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} compact />
+      case 'seventh': return <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} compact onSelect={(i) => selectChord('seventh', i)} />
+      case 'quiz': return <PhoneQuizCard question={quiz.question} phase={quiz.phase} scale={scale} auto={auto} intervalSec={intervalSec} onOpenInterval={() => {}} />
+      case 'diatonic': return <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} compact onSelect={(i) => selectChord('diatonic', i)} />
+      case 'nonDiatonic': return <NonDiatonicSection keyNote={currentKey} selected={chordIndex.nonDiatonic} compact onSelect={(i) => selectChord('nonDiatonic', i)} />
     }
   }
 

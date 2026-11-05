@@ -67,7 +67,7 @@ describe('PhoneApp: キー選択シート（F-104・F-604）', () => {
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 1)))
-    expect(currentTitle()).toBe('セブンスコード')
+    expect(currentTitle()).toBe('7th コード（四和音）')
   })
   it('シートの外をタップすると閉じる', async () => {
     render(<App now={NOW} />)

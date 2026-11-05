@@ -21,7 +21,7 @@ describe('App（PC 表示）', () => {
   it('6 節が番号なしで縦に並び、ショートカット行・ヘルプ・現在地・k/12 が無い', () => {
     render(<App now={NOW} />)
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
-      'メジャースケール', 'ペンタトニック', 'セブンスコード', '度数', 'ダイアトニック', 'ノンダイアトニック',
+      'メジャースケール', 'ペンタトニック', '7th コード（四和音）', '度数', 'ダイアトニック', 'ノンダイアトニック',
     ])
     expect(screen.queryByText(/J\/K/)).not.toBeInTheDocument()
     expect(screen.queryByText(/節 \d/)).not.toBeInTheDocument()

@@ -5,7 +5,7 @@ export type SectionId = (typeof SECTIONS)[number]
 export const SECTION_TITLES: Record<SectionId, string> = {
   scale: 'メジャースケール',
   penta: 'ペンタトニック',
-  seventh: 'セブンスコード',
+  seventh: '7th コード（四和音）',
   quiz: '度数',
   diatonic: 'ダイアトニック',
   nonDiatonic: 'ノンダイアトニック',

@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+/* Inter は公式配布から読む（Google Fonts 版は cv08 などの字形切り替えが削られている。画面定義書 13 §5） */
+@import url('https://rsms.me/inter/inter.css');
 @import "tailwindcss";
 
 /* 画面定義書 13 §5 のデザイントークン。値を変えるときは 13 を先に直す */
@@ -12,11 +13,16 @@
   --color-accent: #f2b544;
   --color-root: #5ad1f0;
   --color-outside: #f06a6a;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "InterVariable", "Inter", system-ui, sans-serif;
 }
 
 html {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* ローマ数字の大文字 I にセリフを付け、数字の 1 と見分ける（画面定義書 13 §2） */
+@utility roman-numeral {
+  font-feature-settings: "cv08";
 }

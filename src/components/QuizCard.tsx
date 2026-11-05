@@ -19,8 +19,8 @@ export function QuizCard({ question, phase, scale, onAdvance, compact = false }:
   const fretboard = <Fretboard markers={markers} />
   return (
     <div className="space-y-4">
-      <div data-testid="quiz-card" className={`relative rounded-2xl bg-surface border border-line flex flex-col items-center justify-center select-none ${compact ? 'px-3 pt-6 pb-16 min-h-[180px]' : 'px-6 pt-10 pb-20 min-h-[240px]'}`}>
-        <div data-testid="quiz-question" className={`font-semibold leading-tight text-center ${compact ? 'text-[32px]' : 'text-[56px]'}`}>
+      <div data-testid="quiz-card" className={`relative rounded-2xl bg-surface border border-line flex flex-col items-center justify-center select-none ${compact ? 'px-3 pt-5 pb-16 min-h-[150px]' : 'px-6 pt-8 pb-20 min-h-[200px]'}`}>
+        <div data-testid="quiz-question" className={`font-semibold leading-tight text-center ${compact ? 'text-[24px]' : 'text-[36px]'}`}>
           {questionSegments(question, scale).map((s, i) => (
             <span key={i} className={s.noWrap ? 'whitespace-nowrap' : undefined}>{s.text}</span>
           ))}
@@ -29,7 +29,7 @@ export function QuizCard({ question, phase, scale, onAdvance, compact = false }:
         <div
           data-testid="quiz-answer-slot"
           aria-hidden={answered ? undefined : 'true'}
-          className={`mt-3 font-bold text-accent leading-tight ${compact ? 'text-[32px]' : 'text-[56px]'} ${answered ? '' : 'invisible'}`}
+          className={`mt-3 font-bold text-accent leading-tight ${compact ? 'text-[24px]' : 'text-[36px]'} ${answered ? '' : 'invisible'}`}
         >
           {answered ? <span data-testid="quiz-answer">{answerText(question, scale)}</span> : '　'}
         </div>

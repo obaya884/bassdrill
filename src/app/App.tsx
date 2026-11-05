@@ -6,6 +6,6 @@ import { PhoneApp } from './PhoneApp'
 
 export function App({ now }: { now?: Date }) {
   const mode = useDisplayMode()
-  const state = useDrillState({ now, mode })
+  const state = useDrillState({ now })
   return mode === 'phone' ? <PhoneApp state={state} /> : <DesktopApp state={state} />
 }

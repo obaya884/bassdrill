@@ -1,8 +1,7 @@
-// その場の状態の保存（F-505）。壊れていても既定値で動き、エラーにしない
+// その場の状態の保存（F-505）。壊れていても既定値で動き、エラーにしない。未知のフィールド（古い intervalSec など）は読まない
 export const STORAGE_KEY = 'bassdrill.v1'
 
 export type Stored = Readonly<{
-  intervalSec: number
   /** YYYY-MM-DD（Asia/Tokyo） */
   date: string
   /** 今日の順列の位置 0〜11 */
@@ -11,16 +10,8 @@ export type Stored = Readonly<{
   manualKey: string | null
 }>
 
-export const DEFAULT_INTERVAL_SEC = 5
-export const MIN_INTERVAL_SEC = 2
-export const MAX_INTERVAL_SEC = 15
-
-function validInterval(v: unknown): number {
-  return typeof v === 'number' && Number.isInteger(v) && v >= MIN_INTERVAL_SEC && v <= MAX_INTERVAL_SEC ? v : DEFAULT_INTERVAL_SEC
-}
-
-function defaults(today: string, intervalSec = DEFAULT_INTERVAL_SEC): Stored {
-  return { intervalSec, date: today, keyOffset: 0, manualKey: null }
+function defaults(today: string): Stored {
+  return { date: today, keyOffset: 0, manualKey: null }
 }
 
 export function loadStored(today: string): Stored {
@@ -34,11 +25,10 @@ export function loadStored(today: string): Stored {
   }
   if (typeof raw !== 'object' || raw === null) return defaults(today)
   const r = raw as Record<string, unknown>
-  const intervalSec = validInterval(r.intervalSec)
-  if (r.date !== today) return defaults(today, intervalSec)
+  if (r.date !== today) return defaults(today)
   const keyOffset = typeof r.keyOffset === 'number' && Number.isInteger(r.keyOffset) && r.keyOffset >= 0 && r.keyOffset < 12 ? r.keyOffset : 0
   const manualKey = typeof r.manualKey === 'string' ? r.manualKey : null
-  return { intervalSec, date: today, keyOffset, manualKey }
+  return { date: today, keyOffset, manualKey }
 }
 
 export function saveStored(s: Stored): void {

@@ -1,4 +1,4 @@
-// 節 2: メジャースケールを指板に（F-201）
+// スケールの節: メジャースケールを指板に（F-201）
 import { type NoteName } from '../../domain/pitch'
 import { majorScale } from '../../domain/scale'
 import { markersFor, type ToneSpec } from '../../domain/fretboard'

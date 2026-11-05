@@ -1,4 +1,4 @@
-// 節 4・6・7 の共通部: 左にコード表、右に選択コードの指板（画面定義書 13 §2）
+// コードの節（セブンス・ダイアトニック・ノンダイアトニック）の共通部: コード表と選択コードの指板（画面定義書 13 §2・§8.2）
 import { pitchClass } from '../../domain/pitch'
 import { type LabeledChord } from '../../domain/progression'
 import { markersFor, type ToneSpec } from '../../domain/fretboard'
@@ -17,11 +17,11 @@ type Props = {
   chords: LabeledChord[]
   selected: number
   guide?: string
-  /** 外れ音を強調するか（節 7 だけ。F-303） */
+  /** 外れ音を強調するか（ノンダイアトニックだけ。F-303） */
   highlightOutside?: boolean
   /** スマホ用: 表を上・指板を下に縦に積み、指板は横スクロール（13 §8.2） */
   compact?: boolean
-  onSelect?(index: number): void
+  onSelect(index: number): void
 }
 
 export function ChordSection({ chords, selected, guide, highlightOutside = false, compact = false, onSelect }: Props) {
@@ -37,7 +37,7 @@ export function ChordSection({ chords, selected, guide, highlightOutside = false
         </div>
       ) : (
         <div className="grid grid-cols-[2fr_3fr] gap-6 items-start">
-          <ChordTable chords={chords} selected={selected} highlightOutside={highlightOutside} />
+          <ChordTable chords={chords} selected={selected} highlightOutside={highlightOutside} onSelect={onSelect} />
           {fretboard}
         </div>
       )}

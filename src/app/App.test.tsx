@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { StrictMode } from 'react'
-import { render, screen, within, act } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { App } from './App'
+import { focused } from '../test/focused'
+import { setViewport } from '../test/viewport'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
-/** フォーカス中の節（コード表は 3 節が同時に描かれるので絞る） */
-const focused = () => within(document.querySelector('section[data-focused="true"]') as HTMLElement)
 
 describe('App', () => {
   beforeEach(() => localStorage.clear())
@@ -164,5 +164,26 @@ describe('App: 開いたまま日付をまたぐ', () => {
     expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(20763)))
     expect(screen.getByText('1 / 12')).toBeInTheDocument()
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
+  })
+})
+
+describe('App: 表示モードの切り替え（F-606）', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('幅が変わると木が切り替わり、出題とコード選択を引き継ぐ', async () => {
+    setViewport(1280)
+    render(<App now={NOW} />)
+    await userEvent.keyboard('jjj{ArrowRight}{ArrowRight}') // 節 4、I7
+    await userEvent.keyboard('j ') // 節 5、答え表示
+    const q = screen.getByTestId('quiz-question').textContent
+    act(() => setViewport(390))
+    expect(screen.getByTestId('page-strip')).toBeInTheDocument()
+    expect(screen.queryByText(/J\/K/)).not.toBeInTheDocument()
+    act(() => setViewport(1280))
+    expect(screen.queryByTestId('page-strip')).not.toBeInTheDocument()
+    expect(screen.getByTestId('quiz-question').textContent).toBe(q)
+    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+    await userEvent.keyboard('k')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('I7')
   })
 })

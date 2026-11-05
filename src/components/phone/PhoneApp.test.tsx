@@ -1,0 +1,214 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { StrictMode } from 'react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { App } from '../../app/App'
+import { formatNote } from '../../domain/pitch'
+import { dayNumber, keyForDay } from '../../domain/dailyKey'
+import { focused } from '../../test/focused'
+import { setViewport } from '../../test/viewport'
+
+const NOW = new Date('2026-11-05T09:00:00+09:00')
+const next = () => userEvent.click(screen.getByRole('button', { name: '次の節' }))
+
+describe('PhoneApp: 骨組み（F-601・F-602）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+
+  it('幅 390 ではスマホの木が描かれ、節 1 がフォーカス', () => {
+    render(<App now={NOW} />)
+    expect(screen.getByTestId('page-strip')).toBeInTheDocument()
+    expect(screen.queryByText(/J\/K/)).not.toBeInTheDocument()
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+    expect(focused().getByText('今日のキー')).toBeInTheDocument()
+  })
+  it('› ‹ で節が移り、端で止まる', async () => {
+    render(<App now={NOW} />)
+    await next()
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '前の節' }))
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '前の節' })).toBeDisabled()
+    for (let i = 0; i < 8; i++) await next()
+    expect(screen.getByText('節 7 / 7 ノンダイアトニック')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '次の節' })).toBeDisabled()
+  })
+  it('下部バーは節ごとに変わる', async () => {
+    render(<App now={NOW} />)
+    expect(screen.getByRole('button', { name: '次のキー' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '▶' })).not.toBeInTheDocument()
+    await next(); await next() // 節 3
+    expect(screen.getByRole('button', { name: 'メジャー / マイナー' })).toBeInTheDocument()
+    await next() // 節 4
+    expect(screen.getByRole('button', { name: '▶' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '◀' })).toBeInTheDocument()
+    await next() // 節 5
+    expect(screen.getByRole('button', { name: '答え / 次' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '自動送り' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '▶' })).not.toBeInTheDocument()
+  })
+  it('次のキー で節に留まる（スマホ）', async () => {
+    render(<App now={NOW} />)
+    await next()
+    await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    expect(screen.getByText('2 / 12')).toBeInTheDocument()
+  })
+  it('外付けキーボードの J/K は効くが、? を押してもヘルプは出ない', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('j')
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    await userEvent.keyboard('?')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: スワイプ（F-601）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  it('帯の上で左にスワイプすると次の節へ、右で前の節へ', () => {
+    render(<App now={NOW} />)
+    const strip = screen.getByTestId('page-strip')
+    fireEvent.pointerDown(strip, { clientX: 300, clientY: 300, pointerId: 1 })
+    fireEvent.pointerMove(strip, { clientX: 200, clientY: 305, pointerId: 1 })
+    fireEvent.pointerUp(strip, { clientX: 200, clientY: 305, pointerId: 1 })
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    fireEvent.pointerDown(strip, { clientX: 100, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(strip, { clientX: 200, clientY: 300, pointerId: 1 })
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: 節の中身（F-602・F-603）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  const tap = (el: Element, x = 100, y = 100) => {
+    fireEvent.pointerDown(el, { clientX: x, clientY: y, pointerId: 1 })
+    fireEvent.pointerUp(el, { clientX: x + 2, clientY: y + 1, pointerId: 1 })
+  }
+
+  it('度数カードのタップで答えが出て、もう一度で次へ（StrictMode でも 1 段）', async () => {
+    render(<StrictMode><App now={NOW} /></StrictMode>)
+    for (let i = 0; i < 4; i++) await next()
+    const card = screen.getByTestId('quiz-card')
+    tap(card)
+    expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+    tap(card)
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('度数カード以外のタップでは答えは出ない', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 4; i++) await next()
+    tap(focused().getByRole('heading', { level: 2 }))
+    expect(screen.queryByTestId('quiz-answer')).not.toBeInTheDocument()
+  })
+  it('指板の箱の中で始めた横の動きでは節が移らない', async () => {
+    render(<App now={NOW} />)
+    await next() // 節 2（指板あり）
+    const box = focused().getByTestId('fretboard-scroll')
+    fireEvent.pointerDown(box, { clientX: 300, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(box, { clientX: 100, clientY: 300, pointerId: 1 })
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+  })
+  it('◀ ▶ でコードが送られ、行タップで選べる', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 3; i++) await next() // 節 4
+    await userEvent.click(screen.getByRole('button', { name: '▶' }))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Cm7')
+    await userEvent.click(focused().getByText('Cm7♭5'))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('Cm7♭5')
+    await userEvent.click(screen.getByRole('button', { name: '◀' }))
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('C7')
+  })
+  it('節 3 の メジャー / マイナー でペンタが切り替わる', async () => {
+    render(<App now={NOW} />)
+    await next(); await next()
+    await userEvent.click(screen.getByRole('button', { name: 'メジャー / マイナー' }))
+    expect(focused().getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: シート（F-604・F-602）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+
+  it('ヘッダーのキーでシートが開き、選ぶと閉じて手で選んだキーになり、節は動かない', async () => {
+    render(<App now={NOW} />)
+    await next()
+    await userEvent.click(screen.getByTestId('current-key'))
+    const sheet = screen.getByRole('dialog', { name: 'キーを選ぶ' })
+    expect(within(sheet).getAllByRole('button')).toHaveLength(12)
+    expect(within(sheet).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-current', 'true')
+    await userEvent.click(within(sheet).getByRole('button', { name: 'E♭' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent('E♭')
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('bassdrill.v1')!).manualKey).toBe('E♭')
+  })
+  it('シートの外をタップすると閉じる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByTestId('current-key'))
+    await userEvent.click(screen.getByTestId('sheet-backdrop'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+  it('シートが開いている間は J と N が効かず、Escape で閉じる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByTestId('current-key'))
+    await userEvent.keyboard('jn')
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+    expect(screen.getByText('1 / 12')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.keyboard('j')
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+  })
+  it('間隔シートは 2〜15 に挟み、保存される', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 4; i++) await next()
+    await userEvent.click(screen.getByRole('button', { name: '自動送りの間隔' }))
+    const sheet = screen.getByRole('dialog', { name: '自動送りの間隔' })
+    expect(sheet).toHaveTextContent('5 秒')
+    for (let i = 0; i < 20; i++) await userEvent.click(within(sheet).getByRole('button', { name: '間隔を増やす' }))
+    expect(sheet).toHaveTextContent('15 秒')
+    for (let i = 0; i < 30; i++) await userEvent.click(within(sheet).getByRole('button', { name: '間隔を減らす' }))
+    expect(sheet).toHaveTextContent('2 秒')
+    expect(JSON.parse(localStorage.getItem('bassdrill.v1')!).intervalSec).toBe(2)
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '自動送りの間隔' })).toHaveTextContent('オフ')
+    await userEvent.click(screen.getByRole('button', { name: '自動送り' }))
+    expect(screen.getByRole('button', { name: '自動送りの間隔' })).toHaveTextContent('オン 2 秒')
+  })
+})
+
+describe('PhoneApp: スクロールの戻しと touch-action（13 §8.1・§8.3・§8.5）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  it('各節（スクロールコンテナ）に touch-action: pan-y が付く', () => {
+    render(<App now={NOW} />)
+    const sec = document.querySelector('section[data-focused="true"]') as HTMLElement
+    expect(sec.style.touchAction).toBe('pan-y')
+  })
+  it('節を移ると縦スクロールと指板の横スクロールが先頭に戻る', async () => {
+    render(<App now={NOW} />)
+    await next() // 節 2
+    const sec = document.querySelector('section[data-focused="true"]') as HTMLElement
+    const box = sec.querySelector('[data-fretboard-scroll]') as HTMLElement
+    sec.scrollTop = 120
+    box.scrollLeft = 300
+    await next() // 節 3
+    await userEvent.click(screen.getByRole('button', { name: '前の節' })) // 節 2 に戻る
+    expect(sec.scrollTop).toBe(0)
+    expect(box.scrollLeft).toBe(0)
+  })
+})

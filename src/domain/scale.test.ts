@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { note, formatNote } from './pitch'
-import { KEYS, majorScale, majorPentatonic, relativeMinorPentatonic, scalePitchClasses } from './scale'
+import { KEYS, majorScale, majorPentatonic, nextOnCircle, relativeMinorPentatonic, scalePitchClasses } from './scale'
 
 const SCALES: Record<string, string> = {
   'C': 'C D E F G A B', 'G': 'G A B C D E F♯', 'D': 'D E F♯ G A B C♯',
@@ -29,5 +29,19 @@ describe('scale', () => {
   })
   it('G♭ のマイナーペンタの根音は E♭', () => {
     expect(formatNote(relativeMinorPentatonic(note('G', -1)).root)).toBe('E♭')
+  })
+})
+
+describe('nextOnCircle（F-102）', () => {
+  it('5 度圏を時計回りに 1 つ進み、F の次は C。12 回で一周', () => {
+    expect(formatNote(nextOnCircle(note('C')))).toBe('G')
+    expect(formatNote(nextOnCircle(note('B')))).toBe('G♭')
+    expect(formatNote(nextOnCircle(note('F')))).toBe('C')
+    let k = note('E', -1)
+    for (let i = 0; i < 12; i++) k = nextOnCircle(k)
+    expect(formatNote(k)).toBe('E♭')
+  })
+  it('5 度圏の綴りで無いキー（F♯）は同じ高さのキー（G♭）の次へ進む', () => {
+    expect(formatNote(nextOnCircle(note('F', 1)))).toBe('D♭')
   })
 })

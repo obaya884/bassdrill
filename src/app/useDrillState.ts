@@ -1,7 +1,7 @@
 // App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ）。PC とスマホの両方の木が同じ状態を使う（F-606）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type NoteName, equalsNote } from '../domain/pitch'
-import { majorScale } from '../domain/scale'
+import { majorScale, nextOnCircle } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { type Question } from '../domain/quiz'
 import { type PentaMode } from '../components/sections/PentaSection'
@@ -21,8 +21,8 @@ export type DrillState = {
   todayKey: NoteName
   /** ヘッダーに出す文字。開いた瞬間はルーレットで回り（F-103）、止まれば今のキー */
   keyLabel: string
+  /** 手で選んだキー（「次のキー」で進んだ先も同じ扱い。F-102・F-104）。今日のキーなら null */
   manualKey: NoteName | null
-  keyOffset: number
   scale: NoteName[]
   /** スマホで見ている節（F-601）。PC 表示は使わないが、切り替えで失わないようここに持つ */
   focus: SectionId
@@ -58,25 +58,23 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
-  // 保存はしない（F-505 廃止）。開き直すと位置 0・手の選択なし＝今日のキーから
+  // 保存はしない（F-505 廃止）。開き直すと手の選択なし＝今日のキーから
   const [focus, setFocus] = useState<SectionId>('scale')
-  const [keyOffset, setKeyOffset] = useState(0)
   const [manualKey, setManualKey] = useState<NoteName | null>(null)
   const [pentaMode, setPentaMode] = useState<PentaMode>('major')
   const [chordIndex, setChordIndex] = useState<Record<ChordSectionId, number>>(NO_SELECTION)
 
-  // 日付が変わったら今日のキーに戻す（位置 0・手の選択なし）。見ている場所は動かさない（F-101）
+  // 日付が変わったら今日のキーに戻す（手の選択なし）。見ている場所は動かさない（F-101）
   const prevToday = useRef(today)
   useEffect(() => {
     if (prevToday.current === today) return
     prevToday.current = today
-    setKeyOffset(0)
     setManualKey(null)
     setChordIndex(NO_SELECTION)
   }, [today])
 
   const todayKey = keyForDay(day)
-  const currentKey = manualKey ?? keyForDay(day, keyOffset)
+  const currentKey = manualKey ?? todayKey
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
   const keyLabel = useKeyRoulette({ today: todayKey, current: currentKey, trigger: today })
   const quiz = useQuizRunner({ scale })
@@ -87,15 +85,16 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
 
   // キーを変えても見ている場所は動かさない（F-102・F-104）
   const selectKey = useCallback((k: NoteName) => {
-    setManualKey(equalsNote(k, keyForDay(day, keyOffset)) ? null : k)
+    setManualKey(equalsNote(k, todayKey) ? null : k)
     setChordIndex(NO_SELECTION)
-  }, [day, keyOffset, setManualKey, setChordIndex])
+  }, [todayKey, setManualKey, setChordIndex])
 
+  // 次のキー＝今のキーの 5 度上（F-102）。今日のキーに戻ったら手の選択なしに戻す
   const nextKey = useCallback(() => {
-    setManualKey(null)
-    setKeyOffset((o) => (o + 1) % 12)
+    const next = nextOnCircle(currentKey)
+    setManualKey(equalsNote(next, todayKey) ? null : next)
     setChordIndex(NO_SELECTION)
-  }, [setManualKey, setKeyOffset, setChordIndex])
+  }, [currentKey, todayKey, setManualKey, setChordIndex])
 
   const selectChord = useCallback((section: ChordSectionId, index: number) => {
     setChordIndex((c) => ({ ...c, [section]: Math.min(CHORD_COUNT[section] - 1, Math.max(0, index)) }))
@@ -104,7 +103,7 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
   const togglePenta = useCallback(() => setPentaMode((m) => (m === 'major' ? 'minor' : 'major')), [setPentaMode])
 
   return {
-    today, currentKey, todayKey, keyLabel, manualKey, keyOffset, scale,
+    today, currentKey, todayKey, keyLabel, manualKey, scale,
     focus, setFocus, moveFocus,
     chordIndex, selectChord,
     pentaMode, togglePenta,

@@ -4,6 +4,7 @@ import { render, screen, within, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
+import { nextOnCircle } from '../domain/scale'
 import { App } from './App'
 import { setReducedMotion, setViewport } from '../test/viewport'
 
@@ -51,13 +52,13 @@ describe('App（PC 表示）', () => {
     await userEvent.click(screen.getByTestId('popover-backdrop'))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
-  it('ポップオーバーの「次のキー」で明日のキーに進み、節の要素は作り直されない', async () => {
+  it('ポップオーバーの「次のキー」で 5 度上に進み、節の要素は作り直されない', async () => {
     render(<App now={NOW} />)
     const before = document.querySelector('#section-quiz')
     await openChooser()
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 1)))
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(nextOnCircle(keyForDay(dayNumber(NOW)))))
     expect(document.querySelector('#section-quiz')).toBe(before)
     expect(localStorage.length).toBe(0)
   })

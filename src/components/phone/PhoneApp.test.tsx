@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { App } from '../../app/App'
 import { formatNote } from '../../domain/pitch'
 import { dayNumber, keyForDay } from '../../domain/dailyKey'
+import { nextOnCircle } from '../../domain/scale'
 import { focused } from '../../test/focused'
 import { setViewport } from '../../test/viewport'
 
@@ -62,7 +63,7 @@ describe('PhoneApp: キー選択シート（F-104・F-604）', () => {
     await userEvent.click(screen.getByTestId('current-key'))
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW), 1)))
+    expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(nextOnCircle(keyForDay(dayNumber(NOW)))))
     expect(currentTitle()).toBe('7th コード（四和音）')
   })
   it('シートの外をタップすると閉じる', async () => {

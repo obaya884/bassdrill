@@ -7,6 +7,12 @@ export const KEYS: readonly NoteName[] = [
   note('G', -1), note('D', -1), note('A', -1), note('E', -1), note('B', -1), note('F'),
 ]
 
+/** 5 度圏を時計回りに 1 つ進めたキー（完全 5 度上。F の次は C）。「次のキー」の規則（F-102）。KEYS に無い綴りは同じ高さのキーとして扱う */
+export function nextOnCircle(key: NoteName): NoteName {
+  const i = KEYS.findIndex((k) => pitchClass(k) === pitchClass(key))
+  return KEYS[(i + 1) % KEYS.length]
+}
+
 const MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11] as const
 
 export type ScaleTone = Readonly<{ note: NoteName; degreeLabel: string }>

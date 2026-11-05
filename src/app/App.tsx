@@ -13,10 +13,7 @@ import { QuizSection } from '../components/sections/QuizSection'
 import { useQuizRunner } from './useQuizRunner'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { useKeyboard, type Action } from './useKeyboard'
-import { loadStored, saveStored } from './storage'
-
-const MIN_INTERVAL = 2
-const MAX_INTERVAL = 15
+import { loadStored, saveStored, MIN_INTERVAL_SEC, MAX_INTERVAL_SEC } from './storage'
 
 type ChordSectionId = 'seventh' | 'diatonic' | 'nonDiatonic'
 const CHORD_COUNT: Record<ChordSectionId, number> = { seventh: 4, diatonic: 7, nonDiatonic: 8 }
@@ -34,10 +31,20 @@ function keyFromName(name: string | null): NoteName | null {
 }
 
 export function App({ now: nowProp }: { now?: Date }) {
-  // 描画中に Date を呼ばない（lint の purity）。開いた時刻で固定し、日付の切り替わりは次に開いたときに反映する
-  const [now] = useState(() => nowProp ?? new Date())
+  // 描画中に Date を呼ばない（lint の purity）。開いたまま日付をまたいだら 1 分ごとの確認とタブ復帰で追随する
+  const [now, setNow] = useState(() => nowProp ?? new Date())
   const day = dayNumber(now)
   const today = todayString(now)
+  useEffect(() => {
+    const refresh = () => setNow((prev) => (todayString(prev) === todayString(new Date()) ? prev : new Date()))
+    const id = setInterval(refresh, 60_000)
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
   const [stored] = useState(() => loadStored(today))
   const [focus, setFocus] = useState<SectionId>('key')
   // キー操作のハンドラから現在のフォーカスを読むための ref。更新関数の中で副作用を起こさない（StrictMode で二重実行されるため）
@@ -53,6 +60,17 @@ export function App({ now: nowProp }: { now?: Date }) {
   const [chordIndex, setChordIndex] = useState<Record<ChordSectionId, number>>(NO_SELECTION)
 
   const [auto, setAuto] = useState(false)
+
+  // 日付が変わったら今日のキーに戻す（位置 0・手の選択なし・節 1）
+  const prevToday = useRef(today)
+  useEffect(() => {
+    if (prevToday.current === today) return
+    prevToday.current = today
+    setKeyOffset(0)
+    setManualKey(null)
+    setChordIndex(NO_SELECTION)
+    setFocus('key')
+  }, [today])
 
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
@@ -96,8 +114,8 @@ export function App({ now: nowProp }: { now?: Date }) {
       case 'advance':
         if (focusRef.current === 'quiz') quizAdvance()
         break
-      case 'intervalUp': setIntervalSec((s) => Math.min(MAX_INTERVAL, s + 1)); break
-      case 'intervalDown': setIntervalSec((s) => Math.max(MIN_INTERVAL, s - 1)); break
+      case 'intervalUp': setIntervalSec((s) => Math.min(MAX_INTERVAL_SEC, s + 1)); break
+      case 'intervalDown': setIntervalSec((s) => Math.max(MIN_INTERVAL_SEC, s - 1)); break
       case 'help': setHelpOpen((h) => !h); break
       case 'escape': setHelpOpen(false); break
       default: break

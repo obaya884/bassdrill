@@ -57,3 +57,15 @@ describe('外れ音の強調は節 7 だけ（F-303）', () => {
     expect(screen.getAllByTestId('marker').filter((m) => m.dataset.kind === 'outside').length).toBeGreaterThan(0)
   })
 })
+
+describe('根音がスケール外のコード（F-303）', () => {
+  it('♭VIM7 の根音は指板で outside かつ根音の印を持つ', async () => {
+    const { NonDiatonicSection } = await import('./chordSections')
+    render(<NonDiatonicSection keyNote={note('C')} selected={6} />) // A♭M7
+    const roots = screen.getAllByTestId('marker').filter((m) => m.textContent?.startsWith('A♭'))
+    expect(roots.length).toBeGreaterThan(0)
+    expect(roots.every((m) => m.dataset.kind === 'outside' && m.dataset.root === 'true')).toBe(true)
+    const es = screen.getAllByTestId('marker').filter((m) => m.textContent?.startsWith('E♭'))
+    expect(es.every((m) => m.dataset.kind === 'outside' && m.dataset.root === undefined)).toBe(true)
+  })
+})

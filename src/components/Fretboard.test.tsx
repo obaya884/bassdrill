@@ -28,3 +28,18 @@ describe('Fretboard', () => {
     for (const name of ['G', 'D', 'A', 'E']) expect(screen.getByTestId(`string-${name}`)).toHaveTextContent(name)
   })
 })
+
+describe('Fretboard: 色以外の手がかり（N-05）', () => {
+  it('外れ音のマーカーは破線の縁を持ち、根音は実線の縁を持つ', () => {
+    render(<Fretboard markers={markersFor([
+      { note: note('F', 1), label: '3', kind: 'outside' },
+      { note: note('D'), label: '1', kind: 'root' },
+      { note: note('A'), label: '5', kind: 'tone' },
+    ])} />)
+    const circle = (kind: string) => screen.getAllByTestId('marker').find((m) => m.dataset.kind === kind)!.querySelector('circle')!
+    expect(circle('outside').getAttribute('stroke-dasharray')).toBeTruthy()
+    expect(circle('root').getAttribute('stroke-dasharray')).toBeNull()
+    expect(Number(circle('root').getAttribute('stroke-width'))).toBeGreaterThan(0)
+    expect(Number(circle('tone').getAttribute('stroke-width') ?? 0)).toBe(0)
+  })
+})

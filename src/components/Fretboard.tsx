@@ -41,8 +41,14 @@ export function Fretboard({ markers }: { markers: Marker[] }) {
         ),
       )}
       {markers.map((m) => (
-        <g key={`${m.string}-${m.fret}`} data-testid="marker" data-string={m.string} data-fret={m.fret} data-kind={m.kind}>
-          <circle cx={colCenter(m.fret)} cy={STRING_Y[m.string]} r={RADIUS} className={`${FILL[m.kind]} ${m.kind === 'root' ? 'stroke-ink' : ''}`} strokeWidth={m.kind === 'root' ? 3 : 0} />
+        <g key={`${m.string}-${m.fret}`} data-testid="marker" data-string={m.string} data-fret={m.fret} data-kind={m.kind} data-root={m.isRoot ? 'true' : undefined}>
+          {/* 色以外の手がかり（N-05）: 根音は実線の縁、外れ音は破線の縁。根音かつ外れ音は破線＋太い縁 */}
+          <circle
+            cx={colCenter(m.fret)} cy={STRING_Y[m.string]} r={RADIUS}
+            className={`${FILL[m.kind]} ${m.isRoot || m.kind === 'outside' ? 'stroke-ink' : ''}`}
+            strokeWidth={m.isRoot ? 3 : m.kind === 'outside' ? 2 : 0}
+            strokeDasharray={m.kind === 'outside' ? '6 4' : undefined}
+          />
           <text x={colCenter(m.fret)} y={STRING_Y[m.string]} dy="0.35em" textAnchor="middle" className="fill-bg" fontSize={18} fontWeight={700}>
             {formatNote(m.note)}
           </text>

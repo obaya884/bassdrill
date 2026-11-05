@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { StrictMode } from 'react'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
@@ -144,5 +144,25 @@ describe('App: StrictMode', () => {
     await userEvent.keyboard('j') // 節 5
     await userEvent.keyboard(' ')
     expect(screen.getByTestId('quiz-answer')).toBeInTheDocument()
+  })
+})
+
+describe('App: 開いたまま日付をまたぐ', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('0:00 を過ぎると今日のキーが切り替わり、位置と手の選択が戻る', () => {
+    vi.setSystemTime(new Date('2026-11-05T23:59:30+09:00'))
+    render(<App now={new Date()} />)
+    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(20762)))
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(screen.getByTestId('current-key').textContent).toBe(formatNote(keyForDay(20763)))
+    expect(screen.getByText('1 / 12')).toBeInTheDocument()
+    expect(screen.getByText('今日のキー')).toBeInTheDocument()
   })
 })

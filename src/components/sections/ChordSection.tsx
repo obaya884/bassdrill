@@ -6,11 +6,10 @@ import { Fretboard } from '../Fretboard'
 import { ChordTable } from '../ChordTable'
 
 function chordTones(x: LabeledChord, highlightOutside: boolean): ToneSpec[] {
-  return x.chord.tones.map((t, i) => ({
-    note: t.note,
-    label: t.degreeLabel,
-    kind: i === 0 ? 'root' : highlightOutside && x.outsidePitchClasses.has(pitchClass(t.note)) ? 'outside' : 'tone',
-  }))
+  return x.chord.tones.map((t, i) => {
+    const outside = highlightOutside && x.outsidePitchClasses.has(pitchClass(t.note))
+    return { note: t.note, label: t.degreeLabel, kind: outside ? 'outside' : i === 0 ? 'root' : 'tone', isRoot: i === 0 }
+  })
 }
 
 type Props = { chords: LabeledChord[]; selected: number; guide?: string; /** 外れ音を強調するか（節 7 だけ。F-303） */ highlightOutside?: boolean }

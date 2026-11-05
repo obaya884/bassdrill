@@ -12,6 +12,12 @@ export type Stored = Readonly<{
 }>
 
 export const DEFAULT_INTERVAL_SEC = 5
+export const MIN_INTERVAL_SEC = 2
+export const MAX_INTERVAL_SEC = 15
+
+function validInterval(v: unknown): number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= MIN_INTERVAL_SEC && v <= MAX_INTERVAL_SEC ? v : DEFAULT_INTERVAL_SEC
+}
 
 function defaults(today: string, intervalSec = DEFAULT_INTERVAL_SEC): Stored {
   return { intervalSec, date: today, keyOffset: 0, manualKey: null }
@@ -28,7 +34,7 @@ export function loadStored(today: string): Stored {
   }
   if (typeof raw !== 'object' || raw === null) return defaults(today)
   const r = raw as Record<string, unknown>
-  const intervalSec = typeof r.intervalSec === 'number' && Number.isFinite(r.intervalSec) ? r.intervalSec : DEFAULT_INTERVAL_SEC
+  const intervalSec = validInterval(r.intervalSec)
   if (r.date !== today) return defaults(today, intervalSec)
   const keyOffset = typeof r.keyOffset === 'number' && Number.isInteger(r.keyOffset) && r.keyOffset >= 0 && r.keyOffset < 12 ? r.keyOffset : 0
   const manualKey = typeof r.manualKey === 'string' ? r.manualKey : null

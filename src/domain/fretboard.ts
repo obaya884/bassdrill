@@ -11,9 +11,10 @@ export const FRET_COUNT = 12
 export const MARKER_FRETS = [3, 5, 7, 9, 12] as const
 
 export type MarkerKind = 'root' | 'tone' | 'outside'
-export type ToneSpec = Readonly<{ note: NoteName; label: string; kind: MarkerKind }>
+/** kind は色の役割。根音がスケール外のとき（♭VIM7 など）は kind='outside' に isRoot を添えて、根音の印も付ける（F-303） */
+export type ToneSpec = Readonly<{ note: NoteName; label: string; kind: MarkerKind; isRoot?: boolean }>
 /** string は 0=G 〜 3=E */
-export type Marker = Readonly<{ string: number; fret: number; note: NoteName; label: string; kind: MarkerKind }>
+export type Marker = Readonly<{ string: number; fret: number; note: NoteName; label: string; kind: MarkerKind; isRoot: boolean }>
 
 /** 各弦・各フレット 0〜12 で、ピッチクラスが一致する tone をマーカーにする。弦順・フレット順 */
 export function markersFor(tones: ToneSpec[]): Marker[] {
@@ -23,7 +24,7 @@ export function markersFor(tones: ToneSpec[]): Marker[] {
   STRINGS.forEach((s, string) => {
     for (let fret = 0; fret <= FRET_COUNT; fret++) {
       const t = byPc.get((s.openPitchClass + fret) % 12)
-      if (t) out.push({ string, fret, note: t.note, label: t.label, kind: t.kind })
+      if (t) out.push({ string, fret, note: t.note, label: t.label, kind: t.kind, isRoot: t.kind === 'root' || t.isRoot === true })
     }
   })
   return out

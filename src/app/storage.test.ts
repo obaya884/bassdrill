@@ -23,3 +23,15 @@ describe('storage', () => {
     expect(loadStored('2026-11-05')).toEqual({ intervalSec: 3, date: '2026-11-05', keyOffset: 2, manualKey: null })
   })
 })
+
+describe('storage: intervalSec の範囲（F-404）', () => {
+  beforeEach(() => localStorage.clear())
+  it.each([0, -3, 2.5, 99, '7'])('%s は既定の 5 に戻す', (v) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ intervalSec: v, date: '2026-11-05', keyOffset: 0, manualKey: null }))
+    expect(loadStored('2026-11-05').intervalSec).toBe(5)
+  })
+  it('2 と 15 はそのまま', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ intervalSec: 15, date: '2026-11-05', keyOffset: 0, manualKey: null }))
+    expect(loadStored('2026-11-05').intervalSec).toBe(15)
+  })
+})

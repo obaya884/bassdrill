@@ -23,11 +23,14 @@ export function QuizCard({ question, phase, scale, onAdvance, compact = false }:
         <div data-testid="quiz-question" className={`font-semibold leading-tight text-center ${compact ? 'text-[32px]' : 'text-[56px]'}`}>
           {questionText(question, scale)}
         </div>
-        {answered && (
-          <div data-testid="quiz-answer" className={`mt-3 font-bold text-accent leading-tight ${compact ? 'text-[32px]' : 'text-[56px]'}`}>
-            {answerText(question, scale)}
-          </div>
-        )}
+        {/* 答えの行は出題中も場所を確保し、答え表示でカードの高さが変わらないようにする（F-102: 見ている場所を動かさない） */}
+        <div
+          data-testid="quiz-answer-slot"
+          aria-hidden={answered ? undefined : 'true'}
+          className={`mt-3 font-bold text-accent leading-tight ${compact ? 'text-[32px]' : 'text-[56px]'} ${answered ? '' : 'invisible'}`}
+        >
+          {answered ? <span data-testid="quiz-answer">{answerText(question, scale)}</span> : '　'}
+        </div>
         <button
           type="button"
           onClick={onAdvance}

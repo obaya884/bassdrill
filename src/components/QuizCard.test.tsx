@@ -35,3 +35,15 @@ describe('QuizCard', () => {
     expect(screen.getByTestId('fretboard-scroll')).toBeInTheDocument()
   })
 })
+
+describe('QuizCard: 高さの安定（F-102）', () => {
+  it('出題中も答えの行の場所を確保し、答え表示で高さが変わらない', () => {
+    const { rerender } = render(<QuizCard question={q} phase="asking" scale={C} onAdvance={() => {}} />)
+    const slot = screen.getByTestId('quiz-answer-slot')
+    expect(slot).toHaveAttribute('aria-hidden', 'true')
+    expect(slot.className).toMatch(/invisible/)
+    rerender(<QuizCard question={q} phase="answered" scale={C} onAdvance={() => {}} />)
+    expect(screen.getByTestId('quiz-answer-slot').className).not.toMatch(/invisible/)
+    expect(screen.getByTestId('quiz-answer')).toHaveTextContent('C')
+  })
+})

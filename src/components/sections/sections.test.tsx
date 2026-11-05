@@ -45,7 +45,7 @@ describe('sections', () => {
   })
 })
 
-describe('外れ音の強調は節 7 だけ（F-303）', () => {
+describe('外れ音の強調はノンダイアトニックの節だけ（F-303）', () => {
   it('SeventhSection はスケール外の構成音を outside にしない', async () => {
     const { SeventhSection } = await import('./chordSections')
     render(<SeventhSection keyNote={note('C')} selected={1} onSelect={() => {}} />) // Cm7: E♭ B♭ はスケール外だが強調しない

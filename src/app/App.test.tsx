@@ -28,11 +28,11 @@ describe('App（PC 表示）', () => {
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(document.querySelector('[data-focused]')).toBeNull()
   })
-  it('今日のキーがヘッダーに出て、5 度圏がある', () => {
+  it('今日のキーがヘッダーに出て、5 度圏の図はヘッダーには無い', () => {
     render(<App now={NOW} />)
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
     expect(screen.getByText('今日のキー')).toBeInTheDocument()
-    expect(screen.getByLabelText('5 度圏')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '5 度圏' })).not.toBeInTheDocument()
   })
   it('ヘッダーのキーでポップオーバーが開き、E♭ を選ぶと閉じて手で選んだキーになる', async () => {
     render(<App now={NOW} />)
@@ -60,9 +60,11 @@ describe('App（PC 表示）', () => {
     expect(document.querySelector('#section-quiz')).toBe(before)
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).keyOffset).toBe(1)
   })
-  it('5 度圏のクリックでも選べる', async () => {
+  it('ポップオーバーの中は 5 度圏の円で、PC でもそこから選ぶ', async () => {
     render(<App now={NOW} />)
-    await userEvent.click(within(screen.getByLabelText('5 度圏')).getByRole('button', { name: 'A' }))
+    await openChooser()
+    const circle = within(screen.getByRole('dialog', { name: 'キーを選ぶ' })).getByRole('group', { name: '5 度圏' })
+    await userEvent.click(within(circle).getByRole('button', { name: 'A' }))
     expect(screen.getByTestId('current-key')).toHaveTextContent('A')
   })
   it('コード表の行クリックで選び、キーが変わると先頭に戻る', async () => {
@@ -139,7 +141,6 @@ describe('App: 表示モードの切り替え（F-606）', () => {
     const q = section('quiz').getByTestId('quiz-question').textContent
     act(() => setViewport(390))
     expect(screen.getByTestId('page-strip')).toBeInTheDocument()
-    expect(screen.queryByLabelText('5 度圏')).not.toBeInTheDocument()
     act(() => setViewport(1280))
     expect(screen.queryByTestId('page-strip')).not.toBeInTheDocument()
     expect(section('quiz').getByTestId('quiz-question').textContent).toBe(q)

@@ -52,6 +52,7 @@ describe('PhoneApp: キー選択シート（F-104・F-604）', () => {
     await next()
     await userEvent.click(screen.getByTestId('current-key'))
     const sheet = screen.getByRole('dialog', { name: 'キーを選ぶ' })
+    expect(within(sheet).getByRole('group', { name: '5 度圏' })).toBeInTheDocument()
     expect(within(sheet).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-current', 'true')
     await userEvent.click(within(sheet).getByRole('button', { name: 'E♭' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

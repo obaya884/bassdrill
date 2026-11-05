@@ -1,7 +1,6 @@
-// PC 表示（F-501・F-502。画面定義書 13 §1〜§3）: 固定ヘッダーと、6 節を等倍で縦に並べた本体。キーボードは購読しない
+// PC 表示（F-501・F-502。画面定義書 13 §1〜§3）: 固定ヘッダー（キーのボタンとポップオーバー）と、6 節を等倍で縦に並べた本体。キーボードは購読しない
 import { useState } from 'react'
 import { formatNote } from '../domain/pitch'
-import { CircleOfFifths } from '../components/CircleOfFifths'
 import { KeyPopover } from '../components/KeyPopover'
 import { QuizCard } from '../components/QuizCard'
 import { ScaleSection } from '../components/sections/ScaleSection'
@@ -29,7 +28,7 @@ export function DesktopApp({ state }: { state: DrillState }) {
   return (
     <div className="min-h-screen bg-bg text-ink">
       <header className="fixed top-0 inset-x-0 h-[88px] z-10 bg-surface border-b border-line">
-        <div className="max-w-[1200px] mx-auto h-full px-6 flex items-center justify-center gap-10">
+        <div className="max-w-[1200px] mx-auto h-full px-6 flex items-center justify-center">
           <div className="relative flex flex-col items-center">
             <button
               type="button"
@@ -46,7 +45,6 @@ export function DesktopApp({ state }: { state: DrillState }) {
               <KeyPopover current={currentKey} onSelect={(k) => { selectKey(k); close() }} onNext={() => { nextKey(); close() }} onClose={close} />
             )}
           </div>
-          <CircleOfFifths current={currentKey} onSelect={selectKey} />
         </div>
       </header>
 

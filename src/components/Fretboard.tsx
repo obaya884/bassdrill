@@ -33,11 +33,11 @@ export function Fretboard({ markers }: { markers: Marker[] }) {
       {MARKER_FRETS.map((fret) =>
         fret === 12 ? (
           <g key={fret}>
-            <circle cx={colCenter(fret)} cy={(STRING_Y[0] + STRING_Y[1]) / 2} r={4} className="fill-muted" />
-            <circle cx={colCenter(fret)} cy={(STRING_Y[2] + STRING_Y[3]) / 2} r={4} className="fill-muted" />
+            <circle cx={colCenter(fret)} cy={(STRING_Y[0] + STRING_Y[1]) / 2} r={9} className="fill-line" />
+            <circle cx={colCenter(fret)} cy={(STRING_Y[2] + STRING_Y[3]) / 2} r={9} className="fill-line" />
           </g>
         ) : (
-          <circle key={fret} cx={colCenter(fret)} cy={VIEW_H / 2} r={4} className="fill-muted" />
+          <circle key={fret} cx={colCenter(fret)} cy={VIEW_H / 2} r={9} className="fill-line" />
         ),
       )}
       {markers.map((m) => (

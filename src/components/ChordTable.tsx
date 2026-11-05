@@ -2,7 +2,9 @@
 import { formatNote, pitchClass } from '../domain/pitch'
 import { type LabeledChord } from '../domain/progression'
 
-export function ChordTable({ chords, selected }: { chords: LabeledChord[]; selected: number }) {
+type Props = { chords: LabeledChord[]; selected: number; /** 外れ音を強調するか（節 7 だけ。F-303） */ highlightOutside?: boolean }
+
+export function ChordTable({ chords, selected, highlightOutside = false }: Props) {
   return (
     <table className="w-full border-collapse">
       <tbody>
@@ -17,7 +19,7 @@ export function ChordTable({ chords, selected }: { chords: LabeledChord[]; selec
               <td className="px-3 py-2 text-[14px] text-muted w-20 whitespace-nowrap">{x.roman}</td>
               <td className="px-3 py-2 text-[24px] font-bold whitespace-nowrap">{x.chord.name}</td>
               {x.chord.tones.map((t) => {
-                const outside = x.outsidePitchClasses.has(pitchClass(t.note))
+                const outside = highlightOutside && x.outsidePitchClasses.has(pitchClass(t.note))
                 return (
                   <td key={t.degreeLabel} data-outside={outside ? 'true' : undefined} className="px-2 py-2 text-center w-14">
                     <div className={`text-[20px] leading-tight ${outside ? 'text-outside underline underline-offset-4' : ''}`}>{formatNote(t.note)}</div>

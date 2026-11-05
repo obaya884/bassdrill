@@ -27,7 +27,7 @@ describe('sections', () => {
     expect(roots.every((m) => m.textContent?.startsWith('A'))).toBe(true)
   })
   it('ChordTable は選択行に aria-selected、外れ音のセルに data-outside を付ける', () => {
-    render(<ChordTable chords={nonDiatonicChords(note('C'))} selected={1} />) // D7
+    render(<ChordTable chords={nonDiatonicChords(note('C'))} selected={1} highlightOutside />) // D7
     const row = screen.getByRole('row', { selected: true })
     expect(within(row).getByText('D7')).toBeInTheDocument()
     expect(within(row).getByText('F♯').closest('[data-outside]')).toHaveAttribute('data-outside', 'true')
@@ -35,10 +35,25 @@ describe('sections', () => {
     expect(screen.getAllByRole('row')).toHaveLength(8)
   })
   it('ChordSection は選択コードの構成音を指板に出し、外れ音は outside', () => {
-    render(<ChordSection chords={nonDiatonicChords(note('C'))} selected={1} guide="ガイド文" />)
+    render(<ChordSection chords={nonDiatonicChords(note('C'))} selected={1} guide="ガイド文" highlightOutside />)
     expect(screen.getByText('ガイド文')).toBeInTheDocument()
     const ms = screen.getAllByTestId('marker')
     expect(ms.filter((m) => m.dataset.kind === 'outside').every((m) => m.textContent?.startsWith('F♯'))).toBe(true)
     expect(ms.filter((m) => m.dataset.kind === 'root').every((m) => m.textContent?.startsWith('D'))).toBe(true)
+  })
+})
+
+describe('外れ音の強調は節 7 だけ（F-303）', () => {
+  it('SeventhSection はスケール外の構成音を outside にしない', async () => {
+    const { SeventhSection } = await import('./chordSections')
+    render(<SeventhSection keyNote={note('C')} selected={1} />) // Cm7: E♭ B♭ はスケール外だが強調しない
+    expect(document.querySelector('[data-outside]')).toBeNull()
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.kind === 'outside')).toHaveLength(0)
+  })
+  it('NonDiatonicSection は outside を付ける', async () => {
+    const { NonDiatonicSection } = await import('./chordSections')
+    render(<NonDiatonicSection keyNote={note('C')} selected={1} />)
+    expect(document.querySelector('[data-outside="true"]')).not.toBeNull()
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.kind === 'outside').length).toBeGreaterThan(0)
   })
 })

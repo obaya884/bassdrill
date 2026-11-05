@@ -16,5 +16,5 @@ export function DiatonicSection({ keyNote, selected }: Props) {
   return <ChordSection chords={diatonicChords(keyNote)} selected={selected} />
 }
 export function NonDiatonicSection({ keyNote, selected }: Props) {
-  return <ChordSection chords={nonDiatonicChords(keyNote)} selected={selected} guide={NON_DIATONIC_GUIDE} />
+  return <ChordSection chords={nonDiatonicChords(keyNote)} selected={selected} guide={NON_DIATONIC_GUIDE} highlightOutside />
 }

@@ -1,6 +1,6 @@
 // 横スワイプとタップの判定（画面定義書 13 §8.5）。Pointer Events で受け、指を離した時点で判定する。
 // 追跡中は window で pointerup / pointercancel も受け、帯の外で離しても帯がずれたまま残らないようにする
-import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 
 export const SWIPE_THRESHOLD = 48
 
@@ -29,18 +29,19 @@ export function useSwipe({ onSwipeLeft, onSwipeRight, onTap, ignoreWithin, thres
     cbs.current = { onSwipeLeft, onSwipeRight, onTap, onDrag, onRelease, threshold }
   }, [onSwipeLeft, onSwipeRight, onTap, onDrag, onRelease, threshold])
 
-  // window 側のリスナー（帯の外で離したとき用）。1 回だけ作り、finish から参照する
-  const windowHandlers = useRef<{ up(e: PointerEvent): void; cancel(e: PointerEvent): void } | null>(null)
+  // window 側のリスナー（帯の外で離したとき用）。1 回だけ作り、finish（依存なしで安定）を参照する
+  const finishRef = useRef<(e: PointerLike, cancelled: boolean) => void>(() => {})
+  const [windowHandlers] = useState(() => ({
+    up: (e: PointerEvent) => finishRef.current(e, false),
+    cancel: (e: PointerEvent) => finishRef.current(e, true),
+  }))
 
   const finish = useCallback((e: PointerLike, cancelled: boolean) => {
     const t = tracking.current
     if (!t || t.id !== e.pointerId) return
     tracking.current = null
-    const wh = windowHandlers.current
-    if (wh) {
-      window.removeEventListener('pointerup', wh.up)
-      window.removeEventListener('pointercancel', wh.cancel)
-    }
+    window.removeEventListener('pointerup', windowHandlers.up)
+    window.removeEventListener('pointercancel', windowHandlers.cancel)
     const { onSwipeLeft, onSwipeRight, onTap, onRelease, threshold } = cbs.current
     const dx = e.clientX - t.x
     const dy = e.clientY - t.y
@@ -52,28 +53,24 @@ export function useSwipe({ onSwipeLeft, onSwipeRight, onTap, ignoreWithin, thres
     } else if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) {
       onTap?.(t.target)
     }
-  }, [])
-
-  if (!windowHandlers.current) {
-    windowHandlers.current = { up: (e) => finish(e, false), cancel: (e) => finish(e, true) }
-  }
+  }, [windowHandlers])
+  useEffect(() => {
+    finishRef.current = finish
+  }, [finish])
 
   useEffect(() => () => {
-    const wh = windowHandlers.current
-    if (!wh) return
-    window.removeEventListener('pointerup', wh.up)
-    window.removeEventListener('pointercancel', wh.cancel)
-  }, [])
+    window.removeEventListener('pointerup', windowHandlers.up)
+    window.removeEventListener('pointercancel', windowHandlers.cancel)
+  }, [windowHandlers])
 
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0 || tracking.current) return
     const target = e.target as Element
     if (ignoreWithin && target.closest(ignoreWithin)) return
     tracking.current = { id: e.pointerId, x: e.clientX, y: e.clientY, target }
-    const wh = windowHandlers.current!
-    window.addEventListener('pointerup', wh.up)
-    window.addEventListener('pointercancel', wh.cancel)
-  }, [ignoreWithin])
+    window.addEventListener('pointerup', windowHandlers.up)
+    window.addEventListener('pointercancel', windowHandlers.cancel)
+  }, [ignoreWithin, windowHandlers])
 
   const onPointerMove = useCallback((e: ReactPointerEvent<HTMLElement>) => {
     const t = tracking.current

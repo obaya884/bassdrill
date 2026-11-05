@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { StrictMode } from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '../../app/App'
+import { formatNote } from '../../domain/pitch'
+import { dayNumber, keyForDay } from '../../domain/dailyKey'
 import { focused } from '../../test/focused'
 import { setViewport } from '../../test/viewport'
 
@@ -129,5 +131,60 @@ describe('PhoneApp: 節の中身（F-602・F-603）', () => {
     await next(); await next()
     await userEvent.click(screen.getByRole('button', { name: 'メジャー / マイナー' }))
     expect(focused().getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
+  })
+})
+
+describe('PhoneApp: シート（F-604・F-602）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+
+  it('ヘッダーのキーでシートが開き、選ぶと閉じて手で選んだキーになり、節は動かない', async () => {
+    render(<App now={NOW} />)
+    await next()
+    await userEvent.click(screen.getByTestId('current-key'))
+    const sheet = screen.getByRole('dialog', { name: 'キーを選ぶ' })
+    expect(within(sheet).getAllByRole('button')).toHaveLength(12)
+    expect(within(sheet).getByRole('button', { name: formatNote(keyForDay(dayNumber(NOW))) })).toHaveAttribute('data-current', 'true')
+    await userEvent.click(within(sheet).getByRole('button', { name: 'E♭' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('current-key')).toHaveTextContent('E♭')
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('bassdrill.v1')!).manualKey).toBe('E♭')
+  })
+  it('シートの外をタップすると閉じる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByTestId('current-key'))
+    await userEvent.click(screen.getByTestId('sheet-backdrop'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+  it('シートが開いている間は J と N が効かず、Escape で閉じる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByTestId('current-key'))
+    await userEvent.keyboard('jn')
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+    expect(screen.getByText('1 / 12')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.keyboard('j')
+    expect(screen.getByText('節 2 / 7 メジャースケール')).toBeInTheDocument()
+  })
+  it('間隔シートは 2〜15 に挟み、保存される', async () => {
+    render(<App now={NOW} />)
+    for (let i = 0; i < 4; i++) await next()
+    await userEvent.click(screen.getByRole('button', { name: '自動送りの間隔' }))
+    const sheet = screen.getByRole('dialog', { name: '自動送りの間隔' })
+    expect(sheet).toHaveTextContent('5 秒')
+    for (let i = 0; i < 20; i++) await userEvent.click(within(sheet).getByRole('button', { name: '間隔を増やす' }))
+    expect(sheet).toHaveTextContent('15 秒')
+    for (let i = 0; i < 30; i++) await userEvent.click(within(sheet).getByRole('button', { name: '間隔を減らす' }))
+    expect(sheet).toHaveTextContent('2 秒')
+    expect(JSON.parse(localStorage.getItem('bassdrill.v1')!).intervalSec).toBe(2)
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '自動送りの間隔' })).toHaveTextContent('オフ')
+    await userEvent.click(screen.getByRole('button', { name: '自動送り' }))
+    expect(screen.getByRole('button', { name: '自動送りの間隔' })).toHaveTextContent('オン 2 秒')
   })
 })

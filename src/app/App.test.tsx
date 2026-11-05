@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { App } from './App'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
+/** フォーカス中の節（コード表は 3 節が同時に描かれるので絞る） */
+const focused = () => within(document.querySelector('section[data-focused="true"]') as HTMLElement)
 
 describe('App', () => {
   beforeEach(() => localStorage.clear())
@@ -64,5 +66,39 @@ describe('App', () => {
     expect(screen.getByRole('dialog', { name: 'キー操作' })).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('App: コードとペンタの節', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('節 4 で → ← がコードを送り、端で止まる', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('jjj') // 節 4
+    expect(screen.getByText('節 4 / 7 セブンスコード')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('M7')
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('m7♭5')
+  })
+  it('節 1 では → を押しても何も起きない', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByText('節 1 / 7 キー')).toBeInTheDocument()
+  })
+  it('節 3 で M がペンタを切り替える', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('jj')
+    expect(screen.getByRole('heading', { name: /メジャーペンタ$/ })).toBeInTheDocument()
+    await userEvent.keyboard('m')
+    expect(screen.getByRole('heading', { name: /マイナーペンタ$/ })).toBeInTheDocument()
+  })
+  it('キーが変わるとコードの選択は先頭に戻る', async () => {
+    render(<App now={NOW} />)
+    await userEvent.keyboard('jjj{ArrowRight}{ArrowRight}')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('I7')
+    await userEvent.keyboard('n')
+    await userEvent.keyboard('jjj')
+    expect(focused().getByRole('row', { selected: true })).toHaveTextContent('IM7')
   })
 })

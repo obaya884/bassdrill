@@ -6,12 +6,20 @@ import { CircleOfFifths } from '../components/CircleOfFifths'
 import { Section } from '../components/Section'
 import { ShortcutBar, HelpDialog } from '../components/ShortcutBar'
 import { KeySection } from '../components/sections/KeySection'
+import { ScaleSection } from '../components/sections/ScaleSection'
+import { PentaSection, type PentaMode } from '../components/sections/PentaSection'
+import { SeventhSection, DiatonicSection, NonDiatonicSection } from '../components/sections/chordSections'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { useKeyboard, type Action } from './useKeyboard'
 import { loadStored, saveStored } from './storage'
 
 const MIN_INTERVAL = 2
 const MAX_INTERVAL = 15
+
+type ChordSectionId = 'seventh' | 'diatonic' | 'nonDiatonic'
+const CHORD_COUNT: Record<ChordSectionId, number> = { seventh: 4, diatonic: 7, nonDiatonic: 8 }
+const NO_SELECTION: Record<ChordSectionId, number> = { seventh: 0, diatonic: 0, nonDiatonic: 0 }
+const isChordSection = (id: string): id is ChordSectionId => id in CHORD_COUNT
 
 function todayString(now: Date): string {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
@@ -32,6 +40,8 @@ export function App({ now = new Date() }: { now?: Date }) {
   const [manualKey, setManualKey] = useState<NoteName | null>(() => keyFromName(stored.manualKey))
   const [intervalSec, setIntervalSec] = useState(stored.intervalSec)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [pentaMode, setPentaMode] = useState<PentaMode>('major')
+  const [chordIndex, setChordIndex] = useState<Record<ChordSectionId, number>>(NO_SELECTION)
 
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
 
@@ -45,8 +55,18 @@ export function App({ now = new Date() }: { now?: Date }) {
 
   const selectKey = useCallback((k: NoteName) => {
     setManualKey(equalsNote(k, keyForDay(day, keyOffset)) ? null : k)
+    setChordIndex(NO_SELECTION)
     setFocus('key')
   }, [day, keyOffset])
+
+  const moveChord = useCallback((delta: number) => {
+    setFocus((f) => {
+      if (isChordSection(f)) {
+        setChordIndex((c) => ({ ...c, [f]: Math.min(CHORD_COUNT[f] - 1, Math.max(0, c[f] + delta)) }))
+      }
+      return f
+    })
+  }, [])
 
   const onAction = useCallback((a: Action) => {
     switch (a) {
@@ -55,15 +75,19 @@ export function App({ now = new Date() }: { now?: Date }) {
       case 'nextKey':
         setManualKey(null)
         setKeyOffset((o) => (o + 1) % 12)
+        setChordIndex(NO_SELECTION)
         setFocus('key')
         break
+      case 'next': moveChord(1); break
+      case 'prev': moveChord(-1); break
+      case 'togglePenta': setPentaMode((m) => (m === 'major' ? 'minor' : 'major')); break
       case 'intervalUp': setIntervalSec((s) => Math.min(MAX_INTERVAL, s + 1)); break
       case 'intervalDown': setIntervalSec((s) => Math.max(MIN_INTERVAL, s - 1)); break
       case 'help': setHelpOpen((h) => !h); break
       case 'escape': setHelpOpen(false); break
-      default: break // next / prev / advance / togglePenta / toggleAuto は後の Task で配線
+      default: break // advance / toggleAuto は Task 13 で配線
     }
-  }, [moveFocus])
+  }, [moveFocus, moveChord])
   useKeyboard(onAction)
 
   const focusIndex = SECTIONS.indexOf(focus)
@@ -85,6 +109,11 @@ export function App({ now = new Date() }: { now?: Date }) {
         {SECTIONS.map((id, i) => (
           <Section key={id} id={id} title={SECTION_TITLES[id]} focused={focus === id} index={i}>
             {id === 'key' && <KeySection keyNote={currentKey} manual={manualKey !== null} />}
+            {id === 'scale' && <ScaleSection keyNote={currentKey} />}
+            {id === 'penta' && <PentaSection keyNote={currentKey} mode={pentaMode} />}
+            {id === 'seventh' && <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} />}
+            {id === 'diatonic' && <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} />}
+            {id === 'nonDiatonic' && <NonDiatonicSection keyNote={currentKey} selected={chordIndex.nonDiatonic} />}
           </Section>
         ))}
       </main>

@@ -38,6 +38,15 @@ export function PhoneApp({ state }: { state: DrillState }) {
   useKeyboard(onAction)
   const index = SECTIONS.indexOf(focus)
 
+  // 節を移ったら、その節の縦スクロールと指板の横スクロールを先頭に戻す（13 §8.3・§8.5）
+  const stripRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const sec = stripRef.current?.children[index] as HTMLElement | undefined
+    if (!sec) return
+    sec.scrollTop = 0
+    for (const box of sec.querySelectorAll<HTMLElement>('[data-fretboard-scroll]')) box.scrollLeft = 0
+  }, [index])
+
   // 帯のページ送り（13 §8.5）。追随中は dragX で帯をずらし、離したら 200ms で収める
   const [dragX, setDragX] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -81,6 +90,7 @@ export function PhoneApp({ state }: { state: DrillState }) {
       <PageDots count={SECTIONS.length} index={index} onPrev={() => state.moveFocus(-1)} onNext={() => state.moveFocus(1)} />
       <div className="flex-1 overflow-hidden">
         <div
+          ref={stripRef}
           data-testid="page-strip"
           className={`flex h-full ${dragging ? '' : 'transition-transform duration-200 ease-out'}`}
           style={{ transform: `translateX(calc(-${index * 100}% + ${dragX}px))`, touchAction: 'pan-y' }}
@@ -92,7 +102,8 @@ export function PhoneApp({ state }: { state: DrillState }) {
               id={`page-${id}`}
               data-focused={focus === id ? 'true' : undefined}
               aria-current={focus === id ? 'true' : undefined}
-              className="w-full shrink-0 h-full overflow-y-auto px-3 py-3"
+              className="w-full shrink-0 h-full overflow-y-auto py-3 px-[max(12px,env(safe-area-inset-left))] pr-[max(12px,env(safe-area-inset-right))]"
+              style={{ touchAction: 'pan-y' }}
             >
               <h2 className="text-[22px] font-semibold mb-3">{`${SECTIONS.indexOf(id) + 1} ${SECTION_TITLES[id]}`}</h2>
               {body(id)}

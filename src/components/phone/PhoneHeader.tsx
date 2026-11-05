@@ -3,7 +3,7 @@ type Props = { title: string; keyName: string; keyOffset: number; onKeyTap(): vo
 
 export function PhoneHeader({ title, keyName, keyOffset, onKeyTap }: Props) {
   return (
-    <header className="shrink-0 h-14 bg-surface border-b border-line flex items-center justify-between px-3 pt-[env(safe-area-inset-top)]">
+    <header className="shrink-0 h-[calc(56px+env(safe-area-inset-top))] bg-surface border-b border-line flex items-center justify-between pt-[env(safe-area-inset-top)] pl-[max(12px,env(safe-area-inset-left))] pr-[max(12px,env(safe-area-inset-right))]">
       <div className="text-[13px] text-muted w-28 truncate">{title}</div>
       <button
         type="button"

@@ -188,3 +188,27 @@ describe('PhoneApp: シート（F-604・F-602）', () => {
     expect(screen.getByRole('button', { name: '自動送りの間隔' })).toHaveTextContent('オン 2 秒')
   })
 })
+
+describe('PhoneApp: スクロールの戻しと touch-action（13 §8.1・§8.3・§8.5）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setViewport(390)
+  })
+  it('各節（スクロールコンテナ）に touch-action: pan-y が付く', () => {
+    render(<App now={NOW} />)
+    const sec = document.querySelector('section[data-focused="true"]') as HTMLElement
+    expect(sec.style.touchAction).toBe('pan-y')
+  })
+  it('節を移ると縦スクロールと指板の横スクロールが先頭に戻る', async () => {
+    render(<App now={NOW} />)
+    await next() // 節 2
+    const sec = document.querySelector('section[data-focused="true"]') as HTMLElement
+    const box = sec.querySelector('[data-fretboard-scroll]') as HTMLElement
+    sec.scrollTop = 120
+    box.scrollLeft = 300
+    await next() // 節 3
+    await userEvent.click(screen.getByRole('button', { name: '前の節' })) // 節 2 に戻る
+    expect(sec.scrollTop).toBe(0)
+    expect(box.scrollLeft).toBe(0)
+  })
+})

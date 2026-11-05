@@ -16,7 +16,7 @@ function Btn({ label, onClick, accent = false }: { label: string; onClick(): voi
 
 export function BottomBar({ section, state }: { section: SectionId; state: DrillState }) {
   return (
-    <footer className="shrink-0 h-16 bg-surface border-t border-line flex items-center justify-center gap-3 px-3 pb-[env(safe-area-inset-bottom)]">
+    <footer className="shrink-0 h-[calc(64px+env(safe-area-inset-bottom))] bg-surface border-t border-line flex items-center justify-center gap-3 pb-[env(safe-area-inset-bottom)] pl-[max(12px,env(safe-area-inset-left))] pr-[max(12px,env(safe-area-inset-right))]">
       {section === 'penta' && <Btn label="メジャー / マイナー" onClick={state.togglePenta} />}
       {isChordSection(section) && (
         <>

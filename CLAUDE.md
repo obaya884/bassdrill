@@ -39,13 +39,13 @@ npx tsc -p tsconfig.app.json --noEmit   # 型検査だけ
 
 ```
 src/domain/      音楽理論の純粋関数。I/O・Date・Math.random を直接呼ばず引数で受ける。React を知らない
-src/components/  指板（SVG）・コード表・キー選択の中身（KeyChooser。12 キーを 5 度圏の円に並べ、今日のキーを色、今のキーを大きさと枠で示す）・PC のポップオーバー・度数カード（QuizCard）・各節。ロジックを持たず domain の結果を描く。phone/ はスマホ専用の部品（ヘッダー・点・シート・指板のスクロール箱）
+src/components/  指板（SVG）・コード表・キー選択の中身（KeyChooser。12 キーを 5 度圏の円に並べ、今のキーを強調し、今日のキーに `pick!!` の札）・PC のポップオーバー・度数カード（QuizCard）・各節。ロジックを持たず domain の結果を描く。phone/ はスマホ専用の部品（ヘッダー・点・シート・指板のスクロール箱）
 src/app/         App.tsx（表示モードで DesktopApp か PhoneApp を描くだけ）・useDrillState（状態と操作。両方の木が共有）・useDisplayMode（幅 1024 未満か pointer: coarse）・useSwipe（Pointer Events のスワイプ／タップ）・useQuizRunner・storage・sections
 ```
 
 - 依存方向は domain ← components ← app
 - **理論の正しさは domain のテスト（12 キー全件の期待値表）で守る**（N-04）。テストの無い導出を画面に出さない。音名の綴り（F-105・F-305。ダブル変化記号の読み替え 12 箇所）はテストの期待値に明示してある
-- 今日のキーは「12 日ブロックごとの順列」から通算日で引く（F-101）。日付は Asia/Tokyo の暦日。保存は要らない
+- 今日のキーは「12 日ブロックごとの順列」から通算日で引く（F-101）。日付は Asia/Tokyo の暦日。保存は要らない。開いた瞬間のルーレット（F-103）はヘッダーの文字だけを回す見た目で、キーの決定とは無関係。テストの既定は `prefers-reduced-motion: reduce`（`src/test/setup.ts`）で回さない。ルーレットのテストだけ `setReducedMotion(false)` にする
 - **キーボードショートカットは持たない**（F-502）。`keydown` を購読しない。操作の入口はヘッダーのキー（キー選択の面。5 度圏の円と次のキー）・コード表の行・度数カードのボタン・ペンタのボタン・スマホの点と ‹ › とスワイプだけ
 - **イベントハンドラは setState の更新関数の中で副作用を起こさない**。StrictMode で更新関数が二重実行され、2 つ進んだことがある
 - **localStorage を使わない**（F-505 は廃止）。開き直すと順列の位置 0・手の選択なし・今日のキーで始まる。開いたまま日付をまたいだときの戻しは `useDrillState` が持つ

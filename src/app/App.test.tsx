@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { formatNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { App } from './App'
-import { setViewport } from '../test/viewport'
+import { setReducedMotion, setViewport } from '../test/viewport'
 
 const NOW = new Date('2026-11-05T09:00:00+09:00')
 const section = (id: string) => within(document.querySelector(`#section-${id}`) as HTMLElement)
@@ -110,6 +110,31 @@ describe('App（PC 表示）', () => {
     expect(localStorage.length).toBe(0)
     render(<App now={NOW} />)
     expect(screen.getByTestId('current-key')).toHaveTextContent(formatNote(keyForDay(dayNumber(NOW))))
+  })
+})
+
+describe('App: 開いた瞬間のルーレット（F-103）', () => {
+  beforeEach(() => {
+    setViewport(1280)
+    setReducedMotion(false)
+    vi.useFakeTimers()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('ヘッダーの文字だけが回り、約 0.8 秒で今日のキーに止まる。本体は最初から今日のキー', () => {
+    render(<App now={NOW} />)
+    const today = formatNote(keyForDay(dayNumber(NOW)))
+    const header = screen.getByTestId('current-key')
+    expect(header).toHaveAttribute('aria-label', `キー ${today} を変える`)
+    expect(section('penta').getByText(`${today} メジャーペンタ`)).toBeInTheDocument()
+    const seen = new Set<string>()
+    for (let i = 0; i < 15; i++) {
+      seen.add(header.textContent!.replace(' ▾', '').trim())
+      act(() => { vi.advanceTimersByTime(50) })
+    }
+    expect(seen.size).toBeGreaterThan(3)
+    act(() => { vi.advanceTimersByTime(1000) })
+    expect(header).toHaveTextContent(today)
   })
 })
 

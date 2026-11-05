@@ -6,6 +6,7 @@ import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { type Question } from '../domain/quiz'
 import { type PentaMode } from '../components/sections/PentaSection'
 import { useQuizRunner, type QuizPhase } from './useQuizRunner'
+import { useKeyRoulette } from './useKeyRoulette'
 import { SECTIONS, type SectionId } from './sections'
 
 export type ChordSectionId = 'seventh' | 'diatonic' | 'nonDiatonic'
@@ -18,6 +19,8 @@ export type DrillState = {
   currentKey: NoteName
   /** 今日のキー（F-101）。進めても手で選んでも変わらない */
   todayKey: NoteName
+  /** ヘッダーに出す文字。開いた瞬間はルーレットで回り（F-103）、止まれば今のキー */
+  keyLabel: string
   manualKey: NoteName | null
   keyOffset: number
   scale: NoteName[]
@@ -75,6 +78,7 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
   const todayKey = keyForDay(day)
   const currentKey = manualKey ?? keyForDay(day, keyOffset)
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
+  const keyLabel = useKeyRoulette({ today: todayKey, current: currentKey, trigger: today })
   const quiz = useQuizRunner({ scale })
 
   const moveFocus = useCallback((delta: number) => {
@@ -100,7 +104,7 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
   const togglePenta = useCallback(() => setPentaMode((m) => (m === 'major' ? 'minor' : 'major')), [setPentaMode])
 
   return {
-    today, currentKey, todayKey, manualKey, keyOffset, scale,
+    today, currentKey, todayKey, keyLabel, manualKey, keyOffset, scale,
     focus, setFocus, moveFocus,
     chordIndex, selectChord,
     pentaMode, togglePenta,

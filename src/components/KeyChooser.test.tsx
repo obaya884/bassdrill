@@ -33,21 +33,28 @@ describe('KeyChooser', () => {
     await userEvent.click(screen.getByRole('button', { name: '次のキー' }))
     expect(onNext).toHaveBeenCalledTimes(1)
   })
-  it('今日のキーは色（data-today・accent の塗り）、今のキーは大きさと枠（data-current・56px）で示す', () => {
+  it('今日のキーは pick!! の札（data-today）、今のキーは accent の塗りと 56px（data-current）で示す', () => {
     render(<KeyChooser current={note('G')} today={note('C')} onSelect={vi.fn()} onNext={vi.fn()} />)
     const circle = screen.getByRole('group', { name: '5 度圏' })
     const c = within(circle).getByRole('button', { name: 'C' })
     const g = within(circle).getByRole('button', { name: 'G' })
     expect(c).toHaveAttribute('data-today', 'true')
     expect(c).not.toHaveAttribute('data-current')
-    expect(c.className).toMatch(/bg-accent/)
+    expect(c.className).not.toMatch(/bg-accent/)
     expect(c.style.width).toBe('48px')
     expect(g).toHaveAttribute('data-current', 'true')
     expect(g).not.toHaveAttribute('data-today')
-    expect(g.className).not.toMatch(/bg-accent/)
-    expect(g.className).toMatch(/border-ink/)
+    expect(g.className).toMatch(/bg-accent/)
     expect(g.style.width).toBe('56px')
     expect(within(circle).getByTestId('circle-center')).toHaveTextContent('G')
     expect(within(circle).getByRole('button', { name: 'D' })).not.toHaveAttribute('data-today')
+    // 札は 1 つだけ。C（12 時）の真下＝円の中心から 72px 上に中心が来る
+    const caption = within(circle).getByTestId('pick-caption')
+    expect(caption).toHaveTextContent('pick!!')
+    expect(within(circle).getAllByTestId('pick-caption')).toHaveLength(1)
+    const cx = parseFloat(c.style.left) + parseFloat(c.style.width) / 2
+    const cy = parseFloat(c.style.top) + parseFloat(c.style.width) / 2
+    expect(Math.abs(parseFloat(caption.style.left) - cx)).toBeLessThan(0.5)
+    expect(parseFloat(caption.style.top)).toBeCloseTo(cy + (122 - 72), 0)
   })
 })

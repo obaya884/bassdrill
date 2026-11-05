@@ -10,7 +10,7 @@ import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { type DrillState } from './useDrillState'
 
 export function DesktopApp({ state }: { state: DrillState }) {
-  const { currentKey, todayKey, chordIndex, pentaMode, quiz, scale, selectKey, nextKey, selectChord, togglePenta } = state
+  const { currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, selectKey, nextKey, selectChord, togglePenta } = state
   const [chooserOpen, setChooserOpen] = useState(false)
   const close = () => setChooserOpen(false)
 
@@ -39,7 +39,7 @@ export function DesktopApp({ state }: { state: DrillState }) {
               onClick={() => setChooserOpen((o) => !o)}
               className="text-[40px] font-bold text-accent leading-none px-3 min-h-11 rounded-lg hover:bg-surface-raised"
             >
-              {formatNote(currentKey)} <span className="text-[16px] text-muted align-middle">▾</span>
+              {keyLabel} <span className="text-[16px] text-muted align-middle">▾</span>
             </button>
             {chooserOpen && (
               <KeyPopover current={currentKey} today={todayKey} onSelect={(k) => { selectKey(k); close() }} onNext={() => { nextKey(); close() }} onClose={close} />

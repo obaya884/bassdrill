@@ -1,13 +1,18 @@
 // テスト用: ビューポートの幅と「タッチ主体（pointer: coarse）」を切り替える
 // jsdom には matchMedia が無いので setup.ts のポリフィルと組で使う
 let coarse = false
+let reducedMotion = true
 const listeners = new Set<(e: { matches: boolean }) => void>()
 
 export function installMatchMediaPolyfill(): void {
   if (typeof window.matchMedia === 'function' && (window.matchMedia as { __polyfill?: boolean }).__polyfill) return
   const mm = (query: string) => ({
     media: query,
-    get matches() { return query.includes('pointer: coarse') ? coarse : false },
+    get matches() {
+      if (query.includes('pointer: coarse')) return coarse
+      if (query.includes('prefers-reduced-motion')) return reducedMotion
+      return false
+    },
     onchange: null,
     addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => { listeners.add(cb) },
     removeEventListener: (_: string, cb: (e: { matches: boolean }) => void) => { listeners.delete(cb) },
@@ -17,6 +22,11 @@ export function installMatchMediaPolyfill(): void {
   })
   ;(mm as { __polyfill?: boolean }).__polyfill = true
   window.matchMedia = mm as unknown as typeof window.matchMedia
+}
+
+/** 既定は true（ルーレットを回さない）。ルーレットのテストだけ false にする */
+export function setReducedMotion(v: boolean): void {
+  reducedMotion = v
 }
 
 export function setViewport(width: number, isCoarse = false): void {

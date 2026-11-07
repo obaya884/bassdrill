@@ -159,4 +159,14 @@ describe('スケール・ペンタの再生ボタン（F-206。スマホ）', ()
     await userEvent.click(screen.getByRole('button', { name: '次の節' }))
     expect(focused().getByRole('button', { name: 'ペンタを再生' })).toBeEnabled()
   })
+  it('ペンタの節は指板 → メジャー / マイナー → 再生ボタンの順に並ぶ', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByRole('button', { name: '次の節' }))
+    const fretboard = document.querySelector('section[data-focused="true"] svg') as Element
+    const toggle = focused().getByRole('button', { name: 'メジャー / マイナー' })
+    const play = focused().getByRole('button', { name: 'ペンタを再生' })
+    const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    expect(follows(fretboard, toggle)).toBe(true)
+    expect(follows(toggle, play)).toBe(true)
+  })
 })

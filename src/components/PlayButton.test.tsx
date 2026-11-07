@@ -10,6 +10,8 @@ describe('PlayButton', () => {
     const btn = screen.getByRole('button', { name: 'スケールを再生' })
     expect(btn.textContent).toBe('')
     expect(btn.querySelector('svg')).not.toBeNull()
+    expect(btn.querySelector('[data-part="ring"]')).not.toBeNull()
+    expect(btn.querySelector('[data-part="triangle"]')).not.toBeNull()
     await userEvent.click(btn)
     expect(onPlay).toHaveBeenCalledTimes(1)
   })

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSound } from './useSound'
+import { FADE } from './audioPlayer'
 import { fakeAudioContext } from '../test/fakeAudio'
 
 const steps = [{ midis: [40], seconds: 0.3 }]
@@ -39,7 +40,7 @@ describe('useSound', () => {
     ctx.currentTime = 5.1
     act(() => result.current.toggle())
     expect(result.current.enabled).toBe(false)
-    expect(ctx.oscs[0].stop).toHaveBeenLastCalledWith(5.1)
+    expect(ctx.oscs[0].stop).toHaveBeenLastCalledWith(5.1 + FADE) // 10ms で音量を落としてから止める
     act(() => result.current.play(steps))
     expect(ctx.oscs).toHaveLength(1)
   })

@@ -12,11 +12,11 @@ const param = (): FakeParam => ({ value: 0, setValueAtTime: vi.fn(), linearRampT
 export function fakeAudioContext(currentTime = 0): FakeContext {
   const oscs: FakeOsc[] = []
   const gains: FakeGain[] = []
-  const ctx = {
+  const ctx: { state: string; [k: string]: unknown } = {
     currentTime,
     state: 'suspended',
     destination: {} as AudioNode,
-    resume: vi.fn(async () => {}),
+    resume: vi.fn(async () => { ctx.state = 'running' }),
     createOscillator: () => {
       const o: FakeOsc = { type: 'sine', frequency: param(), connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn() }
       oscs.push(o)

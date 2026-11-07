@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createPlayer } from './audioPlayer'
+import { createPlayer, FADE } from './audioPlayer'
 import { frequency } from '../domain/sound'
 import { fakeAudioContext } from '../test/fakeAudio'
 
@@ -30,7 +30,9 @@ describe('createPlayer', () => {
     const first = [...ctx.oscs]
     ctx.currentTime = 10.1
     player.play(steps)
-    first.forEach((o) => expect(o.stop).toHaveBeenLastCalledWith(10.1))
+    // 前の音は 10ms で音量を落としてから止める（プチッと切れない）
+    expect(ctx.gains[0].gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 10.1 + FADE)
+    first.forEach((o) => expect(o.stop).toHaveBeenLastCalledWith(10.1 + FADE))
     expect(ctx.oscs).toHaveLength(6)
     expect(ctx.oscs[3].start).toHaveBeenCalledWith(10.1)
   })
@@ -40,10 +42,23 @@ describe('createPlayer', () => {
     player.play(steps)
     ctx.currentTime = 10.2
     player.stop()
-    ctx.oscs.forEach((o) => expect(o.stop).toHaveBeenLastCalledWith(10.2))
-    ctx.gains.forEach((g) => expect(g.disconnect).toHaveBeenCalled())
+    ctx.oscs.forEach((o) => expect(o.stop).toHaveBeenLastCalledWith(10.2 + FADE))
+    ctx.gains.forEach((g) => {
+      expect(g.gain.cancelScheduledValues).toHaveBeenCalledWith(10.2)
+      expect(g.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 10.2 + FADE)
+    })
     // 止めた後にもう一度 stop しても落ちない
     player.stop()
+  })
+  it('AudioContext が中断・停止中なら play の中で resume する（iOS で端末をしまって戻った後）', () => {
+    const ctx = fakeAudioContext(0)
+    const player = createPlayer(ctx)
+    expect(ctx.state).toBe('suspended')
+    player.play(steps)
+    expect(ctx.resume).toHaveBeenCalledTimes(1)
+    expect(ctx.state).toBe('running')
+    player.play(steps)
+    expect(ctx.resume).toHaveBeenCalledTimes(1)
   })
   it('空の段取りでは何も作らない', () => {
     const ctx = fakeAudioContext(0)

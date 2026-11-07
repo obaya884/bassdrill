@@ -27,13 +27,14 @@ export function useSound({ createContext = defaultCreateContext, getAudioSession
     const next = !enabled
     const session = getAudioSession()
     if (next) {
+      // iOS はマナーモード中 Web Audio を無音にする（環境音扱い）。入にした以上は鳴らすので再生用のセッションにする（F-506）。
+      // AudioContext を作る前に設定する（作成済みの文脈には効かなかった。実機 2026-11-07）
+      if (session) session.type = 'playback'
       if (!created.current) {
         created.current = true
         ctxRef.current = createContext()
         playerRef.current = ctxRef.current ? createPlayer(ctxRef.current) : null
       }
-      // iOS はマナーモード中 Web Audio を無音にする（環境音扱い）。入にした以上は鳴らすので再生用のセッションにする（F-506）
-      if (session) session.type = 'playback'
       void ctxRef.current?.resume()
     } else {
       playerRef.current?.stop()

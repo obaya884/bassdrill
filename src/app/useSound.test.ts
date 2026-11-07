@@ -68,6 +68,14 @@ describe('useSound とマナーモード（F-506）', () => {
     act(() => result.current.toggle())
     expect(audioSession.type).toBe('auto')
   })
+  it('audioSession を playback にするのは AudioContext を作る前（作成済みの文脈には効かない）', () => {
+    const audioSession = { type: 'auto' }
+    const seen: string[] = []
+    const createContext = () => { seen.push(audioSession.type); return fakeAudioContext() }
+    const { result } = renderHook(() => useSound({ createContext, getAudioSession: () => audioSession }))
+    act(() => result.current.toggle())
+    expect(seen).toEqual(['playback'])
+  })
   it('audioSession が無い環境でも入切できる', () => {
     const ctx = fakeAudioContext()
     const { result } = renderHook(() => useSound({ createContext: () => ctx, getAudioSession: () => null }))

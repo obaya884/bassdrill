@@ -34,3 +34,6 @@ dist-ssr
 .DS_Store
 # Vercel CLI が作る環境ファイル
 .env*
+
+# Playwright MCP の出力
+.playwright-mcp/

@@ -1,4 +1,4 @@
-// 6 節の並びと見出し（F-501。番号は付けない。文言は画面定義書 13 §6）
+// 6 節の並びと見出し（F-501。番号は付けない。文言は画面定義書 13 §6。ノンダイアトニックのガイド文は components/sections/chordSections）
 export const SECTIONS = ['scale', 'penta', 'seventh', 'quiz', 'diatonic', 'nonDiatonic'] as const
 export type SectionId = (typeof SECTIONS)[number]
 
@@ -10,7 +10,3 @@ export const SECTION_TITLES: Record<SectionId, string> = {
   diatonic: 'ダイアトニック',
   nonDiatonic: 'ノンダイアトニック',
 }
-
-/** ノンダイアトニックの節のガイド文（F-303。画面定義書 13 §6） */
-export const NON_DIATONIC_GUIDE =
-  'ダイアトニックでないコードは無数にあるが、J-POP・Rock でよく使われるのはこの 8 つ。スケールから外れた音をベースラインに取り入れるとよい'

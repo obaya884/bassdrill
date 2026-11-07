@@ -1,9 +1,7 @@
 // 度数の出題の状態機械（F-403）。出題中 → 答え表示 → 次の出題中
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type NoteName } from '../domain/pitch'
-import { nextQuestion, type Question } from '../domain/quiz'
-
-export type QuizPhase = 'asking' | 'answered'
+import { nextQuestion, type Question, type QuizPhase } from '../domain/quiz'
 
 type Options = { scale: NoteName[]; rng?: () => number }
 type State = { question: Question; phase: QuizPhase }

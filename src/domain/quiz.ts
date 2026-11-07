@@ -17,6 +17,9 @@ export const INTERVAL_SPEC: Record<IntervalId, Readonly<{ label: string; semiton
   '7': { label: '7 度', semitones: 11, letterSteps: 6 },
 }
 
+/** 出題の段階（F-403）。出題中 → 答え表示 → 次の出題中 */
+export type QuizPhase = 'asking' | 'answered'
+
 /** baseIndex はスケールの 0〜6 */
 export type Question = Readonly<{ kind: QuizKind; baseIndex: number; interval: IntervalId }>
 

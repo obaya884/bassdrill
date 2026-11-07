@@ -2,7 +2,10 @@
 import { type NoteName } from '../../domain/pitch'
 import { diatonicChords, keySevenths, nonDiatonicChords } from '../../domain/progression'
 import { ChordSection } from './ChordSection'
-import { NON_DIATONIC_GUIDE } from '../../app/sections'
+
+/** ノンダイアトニックの節のガイド文（F-303。画面定義書 13 §6） */
+const NON_DIATONIC_GUIDE =
+  'ダイアトニックでないコードは無数にあるが、J-POP・Rock でよく使われるのはこの 8 つ。スケールから外れた音をベースラインに取り入れるとよい'
 
 type Props = { keyNote: NoteName; selected: number; compact?: boolean; onSelect(index: number): void }
 

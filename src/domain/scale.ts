@@ -17,6 +17,9 @@ const MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11] as const
 
 export type ScaleTone = Readonly<{ note: NoteName; degreeLabel: string }>
 
+/** ペンタの切り替え（F-202）。メジャーペンタか平行調のマイナーペンタか */
+export type PentaMode = 'major' | 'minor'
+
 /** メジャースケール 7 音。文字を 1 つずつ進めて綴る（F-105） */
 export function majorScale(key: NoteName): NoteName[] {
   const root = pitchClass(key)

@@ -1,10 +1,9 @@
 // 度数の問題カード（F-403。画面定義書 13 §2.1・§8.2）: 問題文・答え・右下の「答え／次」ボタン。カードの他の場所にハンドラは付けない
 import { type NoteName } from '../domain/pitch'
-import { answerNote, answerText, baseNote, questionSegments, type Question } from '../domain/quiz'
+import { answerNote, answerText, baseNote, questionSegments, type Question, type QuizPhase } from '../domain/quiz'
 import { markersFor } from '../domain/fretboard'
 import { Fretboard } from './Fretboard'
 import { FretboardScroller } from './phone/FretboardScroller'
-import { type QuizPhase } from '../app/useQuizRunner'
 
 type Props = { question: Question; phase: QuizPhase; scale: NoteName[]; onAdvance(): void; compact?: boolean }
 

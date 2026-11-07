@@ -1,11 +1,9 @@
 // ペンタの節: メジャーペンタ／平行調のマイナーペンタ（F-202）。切り替えは節の中のボタン
 import { type NoteName, formatNote } from '../../domain/pitch'
-import { majorPentatonic, relativeMinorPentatonic, type ScaleTone } from '../../domain/scale'
+import { majorPentatonic, relativeMinorPentatonic, type PentaMode, type ScaleTone } from '../../domain/scale'
 import { markersFor, type ToneSpec } from '../../domain/fretboard'
 import { Fretboard } from '../Fretboard'
 import { FretboardScroller } from '../phone/FretboardScroller'
-
-export type PentaMode = 'major' | 'minor'
 
 function toSpecs(tones: ScaleTone[]): ToneSpec[] {
   return tones.map((t) => ({ note: t.note, label: t.degreeLabel, kind: t.degreeLabel === '1' ? 'root' : 'tone' }))

@@ -1,11 +1,10 @@
 // App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ）。PC とスマホの両方の木が同じ状態を使う（F-606）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type NoteName, equalsNote } from '../domain/pitch'
-import { majorScale, nextOnCircle } from '../domain/scale'
+import { majorScale, nextOnCircle, type PentaMode } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
-import { type Question } from '../domain/quiz'
-import { type PentaMode } from '../components/sections/PentaSection'
-import { useQuizRunner, type QuizPhase } from './useQuizRunner'
+import { type Question, type QuizPhase } from '../domain/quiz'
+import { useQuizRunner } from './useQuizRunner'
 import { useKeyRoulette } from './useKeyRoulette'
 import { SECTIONS, type SectionId } from './sections'
 

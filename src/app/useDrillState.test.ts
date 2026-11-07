@@ -3,10 +3,10 @@ import { renderHook, act } from '@testing-library/react'
 import { useDrillState } from './useDrillState'
 import { equalsNote } from '../domain/pitch'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
-import { nextOnCircle } from '../domain/scale'
+import { nextOnCircle, majorScale, relativeMinorPentatonic } from '../domain/scale'
 import { SECTIONS } from './sections'
 import { fakeAudioContext } from '../test/fakeAudio'
-import { chordSound, quizSound } from '../domain/sound'
+import { chordSound, quizSound, scaleSound, rootMidi } from '../domain/sound'
 import { diatonicChords } from '../domain/progression'
 import { baseNote } from '../domain/quiz'
 
@@ -108,6 +108,38 @@ describe('useDrillState の音（F-306・F-406・F-506）', () => {
     act(() => result.current.nextKey())
     act(() => result.current.selectKey(result.current.scale[3]))
     act(() => result.current.moveFocus(1))
+    expect(ctx.oscs).toHaveLength(0)
+  })
+})
+
+describe('useDrillState の再生（F-206）', () => {
+  const setup = () => {
+    const ctx = fakeAudioContext(1)
+    const { result } = renderHook(() => useDrillState({ now: NOW, createAudioContext: () => ctx }))
+    return { ctx, result }
+  }
+  it('入にして playScale("scale") で今のキーのメジャースケール 15 音が予約される', () => {
+    const { ctx, result } = setup()
+    act(() => result.current.sound.toggle())
+    act(() => result.current.playScale('scale'))
+    expect(ctx.oscs).toHaveLength(15)
+    const expected = scaleSound(result.current.currentKey, majorScale(result.current.currentKey))
+    expect(ctx.oscs[7].frequency.value).toBeCloseTo(440 * 2 ** ((expected[7].midis[0] - 69) / 12), 6)
+  })
+  it('playScale("penta") はメジャーなら 11 音、マイナーに切り替えるとマイナーペンタの根音から始まる', () => {
+    const { ctx, result } = setup()
+    act(() => result.current.sound.toggle())
+    act(() => result.current.playScale('penta'))
+    expect(ctx.oscs).toHaveLength(11)
+    act(() => result.current.togglePenta())
+    act(() => result.current.playScale('penta'))
+    expect(ctx.oscs).toHaveLength(22)
+    const minor = relativeMinorPentatonic(result.current.currentKey)
+    expect(ctx.oscs[11].frequency.value).toBeCloseTo(440 * 2 ** ((rootMidi(minor.root) - 69) / 12), 6)
+  })
+  it('切のままでは playScale で何も鳴らない', () => {
+    const { ctx, result } = setup()
+    act(() => result.current.playScale('scale'))
     expect(ctx.oscs).toHaveLength(0)
   })
 })

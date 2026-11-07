@@ -181,3 +181,16 @@ describe('App: 表示モードの切り替え（F-606）', () => {
     expect(section('seventh').getByRole('row', { selected: true })).toHaveTextContent('I7')
   })
 })
+
+describe('スケール・ペンタの再生ボタン（F-206。PC）', () => {
+  it('スケールとペンタの節に再生ボタンがあり、音が切では押せず、入にすると押せる', async () => {
+    render(<App now={NOW} />)
+    const scaleBtn = within(document.querySelector('#section-scale') as HTMLElement).getByRole('button', { name: 'スケールを再生' })
+    const pentaBtn = within(document.querySelector('#section-penta') as HTMLElement).getByRole('button', { name: 'ペンタを再生' })
+    expect(scaleBtn).toBeDisabled()
+    expect(pentaBtn).toBeDisabled()
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' }))
+    expect(scaleBtn).toBeEnabled()
+    expect(pentaBtn).toBeEnabled()
+  })
+})

@@ -6,19 +6,20 @@ import { SoundToggle } from '../components/SoundToggle'
 import { QuizCard } from '../components/QuizCard'
 import { ScaleSection } from '../components/sections/ScaleSection'
 import { PentaSection } from '../components/sections/PentaSection'
+import { PlayButton } from '../components/PlayButton'
 import { SeventhSection, DiatonicSection, NonDiatonicSection } from '../components/sections/chordSections'
 import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { type DrillState } from './useDrillState'
 
 export function DesktopApp({ state }: { state: DrillState }) {
-  const { currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, sound, selectKey, nextKey, selectChord, togglePenta } = state
+  const { currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, sound, selectKey, nextKey, selectChord, togglePenta, playScale } = state
   const [chooserOpen, setChooserOpen] = useState(false)
   const close = () => setChooserOpen(false)
 
   const body = (id: SectionId) => {
     switch (id) {
-      case 'scale': return <ScaleSection keyNote={currentKey} />
-      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} onToggle={togglePenta} />
+      case 'scale': return <ScaleSection keyNote={currentKey} soundEnabled={sound.enabled} onPlay={() => playScale('scale')} />
+      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} onToggle={togglePenta} soundEnabled={sound.enabled} onPlay={() => playScale('penta')} />
       case 'seventh': return <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} onSelect={(i) => selectChord('seventh', i)} />
       case 'quiz': return <QuizCard question={quiz.question} phase={quiz.phase} scale={scale} onAdvance={quiz.advance} />
       case 'diatonic': return <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} onSelect={(i) => selectChord('diatonic', i)} />
@@ -55,7 +56,11 @@ export function DesktopApp({ state }: { state: DrillState }) {
       <main className="max-w-[1200px] mx-auto px-6 pt-[120px] pb-[40vh] space-y-16">
         {SECTIONS.map((id) => (
           <section key={id} id={`section-${id}`}>
-            <h2 className="text-[28px] font-semibold mb-4">{SECTION_TITLES[id]}</h2>
+            <div className="flex items-center gap-4 mb-4">
+              <h2 className="text-[28px] font-semibold">{SECTION_TITLES[id]}</h2>
+              {/* スケールの再生ボタンは見出しの右（13 §2.2）。ペンタは節の中の切り替えの右 */}
+              {id === 'scale' && <PlayButton label="スケールを再生" enabled={sound.enabled} onPlay={() => playScale('scale')} />}
+            </div>
             {body(id)}
           </section>
         ))}

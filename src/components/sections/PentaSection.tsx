@@ -1,17 +1,18 @@
-// ペンタの節: メジャーペンタ／平行調のマイナーペンタ（F-202）。切り替えは節の中のボタン
+// ペンタの節: メジャーペンタ／平行調のマイナーペンタ（F-202）。切り替えは節の中のボタン。再生ボタン（F-206）は PC では切り替えの右、スマホでは指板の下に中央揃え
 import { type NoteName, formatNote } from '../../domain/pitch'
 import { majorPentatonic, relativeMinorPentatonic, type PentaMode, type ScaleTone } from '../../domain/scale'
 import { markersFor, type ToneSpec } from '../../domain/fretboard'
 import { Fretboard } from '../Fretboard'
 import { FretboardScroller } from '../phone/FretboardScroller'
+import { PlayButton } from '../PlayButton'
 
 function toSpecs(tones: ScaleTone[]): ToneSpec[] {
   return tones.map((t) => ({ note: t.note, label: t.degreeLabel, kind: t.degreeLabel === '1' ? 'root' : 'tone' }))
 }
 
-type Props = { keyNote: NoteName; mode: PentaMode; onToggle(): void; compact?: boolean }
+type Props = { keyNote: NoteName; mode: PentaMode; onToggle(): void; soundEnabled: boolean; onPlay(): void; compact?: boolean }
 
-export function PentaSection({ keyNote, mode, onToggle, compact = false }: Props) {
+export function PentaSection({ keyNote, mode, onToggle, soundEnabled, onPlay, compact = false }: Props) {
   const { root, tones } = mode === 'major'
     ? { root: keyNote, tones: majorPentatonic(keyNote) }
     : relativeMinorPentatonic(keyNote)
@@ -24,8 +25,10 @@ export function PentaSection({ keyNote, mode, onToggle, compact = false }: Props
         <button type="button" onClick={onToggle} className="min-h-11 px-4 rounded-xl bg-surface-raised text-[15px] font-semibold">
           メジャー / マイナー
         </button>
+        {!compact && <PlayButton label="ペンタを再生" enabled={soundEnabled} onPlay={onPlay} />}
       </div>
       {compact ? <FretboardScroller>{fretboard}</FretboardScroller> : fretboard}
+      {compact && <div className="flex justify-center mt-3"><PlayButton label="ペンタを再生" enabled={soundEnabled} onPlay={onPlay} /></div>}
     </div>
   )
 }

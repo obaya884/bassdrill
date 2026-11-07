@@ -25,6 +25,13 @@ describe('App（PC 表示）', () => {
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(document.querySelector('[data-focused]')).toBeNull()
   })
+  it('ヘッダー右端に音の入切ボタンがあり、既定は切。押すと入になる（F-506）', async () => {
+    render(<App now={NOW} />)
+    const btn = within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' })
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
   it('今日のキーがヘッダーに出て、補助文言も 5 度圏の図もヘッダーには無い', () => {
     render(<App now={NOW} />)
     expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')

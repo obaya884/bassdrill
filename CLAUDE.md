@@ -49,10 +49,10 @@ src/domain/      音楽理論の純粋関数。I/O・Date・Math.random を直�
 src/components/  指板（SVG）・コード表・キー選択の中身（KeyChooser。12 キーを 5 度圏の円に並べ、今のキーを強調し、今日のキーに `pick!!` の札）・PC のポップオーバー（KeyPopover）・度数カード（QuizCard）。ロジックを持たず domain の結果を描く
   sections/      節の中身。ScaleSection・PentaSection・ChordSection（コード表＋選択コードの指板の共通部）と、それにコード列を渡す薄い包み chordSections（Seventh／Diatonic／NonDiatonic）
   phone/         スマホ専用の部品（ヘッダー・点・シート・指板のスクロール箱）
-src/app/         App.tsx（表示モードで DesktopApp か PhoneApp を描くだけ）・DesktopApp／PhoneApp（節の並べ方だけが違い、中身は同じ部品に compact を渡す）・useDrillState（状態と操作。両方の木が共有）・useDisplayMode（幅 1024 未満か pointer: coarse）・useSwipe（Pointer Events のスワイプ／タップ）・useQuizRunner（出題の状態遷移）・useKeyRoulette（開いた瞬間のルーレット）・sections.ts（6 節の ID と見出し）
+src/app/         App.tsx（表示モードで DesktopApp か PhoneApp を描くだけ）・DesktopApp／PhoneApp（節の並べ方だけが違い、中身は同じ部品に compact を渡す）・useDrillState（状態と操作。両方の木が共有）・useDisplayMode（幅 1024 未満か pointer: coarse）・useSwipe（Pointer Events のスワイプ／タップ）・useQuizRunner（出題の状態遷移）・useKeyRoulette（開いた瞬間のルーレット）・useSound（音の入切と鳴らす入口。既定は切）・audioPlayer（Web Audio で段取りを鳴らす。AudioContext は注入し、テストは `src/test/fakeAudio.ts` の偽物）・sections.ts（6 節の ID と見出し）
 ```
 
-domain の流れ: `pitch`（音名＝文字＋変化記号、ピッチクラス、文字送りの綴り）→ `scale`（`KEYS` は 5 度圏の順、`majorScale`、ペンタ、`nextOnCircle`）→ `chord`（`buildChord`。ダブル変化記号なら根音を読み替える F-305）→ `progression`（セブンス 4・ダイアトニック 7・ノンダイアトニック 8 と外れ音）→ `quiz`（コード度数の出題）→ `fretboard`（4 弦 0〜12 フレットのマーカー）。`dailyKey` は通算日と 12 日ブロックの順列。`table12.test.ts` が 12 キー全件の期待値表（N-04）で、理論の変更はまずこの表を直す。
+domain の流れ: `pitch`（音名＝文字＋変化記号、ピッチクラス、文字送りの綴り）→ `scale`（`KEYS` は 5 度圏の順、`majorScale`、ペンタ、`nextOnCircle`）→ `chord`（`buildChord`。ダブル変化記号なら根音を読み替える F-305）→ `progression`（セブンス 4・ダイアトニック 7・ノンダイアトニック 8 と外れ音）→ `quiz`（コード度数の出題）→ `fretboard`（4 弦 0〜12 フレットのマーカー）→ `sound`（音の高さと鳴らす段取り `SoundStep[]`）。`dailyKey` は通算日と 12 日ブロックの順列。`table12.test.ts` が 12 キー全件の期待値表（N-04）で、理論の変更はまずこの表を直す。
 
 - 依存方向は domain ← components ← app
 - **理論の正しさは domain のテスト（12 キー全件の期待値表）で守る**（N-04）。テストの無い導出を画面に出さない。音名の綴り（F-105・F-305。ダブル変化記号の読み替え 12 箇所）はテストの期待値に明示してある
@@ -60,6 +60,7 @@ domain の流れ: `pitch`（音名＝文字＋変化記号、ピッチクラス�
 - **キーボードショートカットは持たない**（F-502）。`keydown` を購読しない。操作の入口はヘッダーのキー（キー選択の面。5 度圏の円と次のキー）・コード表の行・度数カードのボタン・ペンタのボタン・スマホの点と ‹ › とスワイプだけ
 - **イベントハンドラは setState の更新関数の中で副作用を起こさない**。StrictMode で更新関数が二重実行され、2 つ進んだことがある
 - **localStorage を使わない**（F-505 は廃止）。開き直すと手の選択なし・今日のキーで始まる。「次のキー」は今のキーの 5 度上（`nextOnCircle`。F-102）で、順列の位置は持たない。開いたまま日付をまたいだときの戻しは `useDrillState` が持つ
+- **音は domain が段取り（何を何秒）を組み、app が Web Audio で鳴らす**（F-306・F-406）。入切は `useDrillState` の `sound` で既定は切（F-506）。鳴るのはコード表の行タップと度数の「答え」だけで、キー変更・「次」・節の移動では鳴らさない
 - 外れ音の強調（赤・下線）はノンダイアトニックの節だけ（F-303）。セブンス・ダイアトニックではスケール外の音を含むコードでも強調しない
 - **PC とスマホは両方の木を描いて片方を隠すのではなく、どちらか一方だけを描く**（F-606）。状態は `useDrillState` にあるので切り替えで失わない。キーを変えても見ている場所は動かさない（PC のスクロール位置・スマホの節）。節は 6 つで番号を付けない。PC は 6 節を等倍で縦に並べ、フォーカスの概念を持たない
 - スワイプは Pointer Events で受ける（jsdom は Touch を作れない）。指板の箱 `[data-fretboard-scroll]` の中で始まったタッチはページ送りにしない。追随や iOS のパン衝突は jsdom で再現できないので実機で見る

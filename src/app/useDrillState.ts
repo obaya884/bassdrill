@@ -1,17 +1,22 @@
-// App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ）。PC とスマホの両方の木が同じ状態を使う（F-606）
+// App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ・音）。PC とスマホの両方の木が同じ状態を使う（F-606）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type NoteName, equalsNote } from '../domain/pitch'
 import { majorScale, nextOnCircle, type PentaMode } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
-import { type Question, type QuizPhase } from '../domain/quiz'
+import { type Question, type QuizPhase, baseNote } from '../domain/quiz'
+import { diatonicChords, keySevenths, nonDiatonicChords } from '../domain/progression'
+import { chordSound, quizSound } from '../domain/sound'
 import { useQuizRunner } from './useQuizRunner'
 import { useKeyRoulette } from './useKeyRoulette'
+import { useSound } from './useSound'
+import { type AudioContextLike } from './audioPlayer'
 import { SECTIONS, type SectionId } from './sections'
 
 export type ChordSectionId = 'seventh' | 'diatonic' | 'nonDiatonic'
 export const CHORD_COUNT: Record<ChordSectionId, number> = { seventh: 4, diatonic: 7, nonDiatonic: 8 }
 const NO_SELECTION: Record<ChordSectionId, number> = { seventh: 0, diatonic: 0, nonDiatonic: 0 }
 export const isChordSection = (id: string): id is ChordSectionId => id in CHORD_COUNT
+const CHORDS_OF = { seventh: keySevenths, diatonic: diatonicChords, nonDiatonic: nonDiatonicChords } as const
 
 export type DrillState = {
   today: string
@@ -32,6 +37,8 @@ export type DrillState = {
   pentaMode: PentaMode
   togglePenta(): void
   quiz: { question: Question; phase: QuizPhase; advance(): void }
+  /** 音の入切（F-506）。既定は切。入のとき selectChord と「答え」で鳴る（F-306・F-406） */
+  sound: { enabled: boolean; toggle(): void }
   nextKey(): void
   selectKey(k: NoteName): void
 }
@@ -42,7 +49,9 @@ function todayString(now: Date): string {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
-export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState {
+type Options = { now?: Date; createAudioContext?: () => AudioContextLike | null }
+
+export function useDrillState({ now: nowProp, createAudioContext }: Options = {}): DrillState {
   // 描画中に Date を呼ばない（lint の purity）。開いたまま日付をまたいだら 1 分ごとの確認とタブ復帰で追随する
   const [now, setNow] = useState(() => nowProp ?? new Date())
   const day = dayNumber(now)
@@ -76,7 +85,20 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
   const currentKey = manualKey ?? todayKey
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
   const keyLabel = useKeyRoulette({ today: todayKey, current: currentKey, trigger: today })
-  const quiz = useQuizRunner({ scale })
+  const runner = useQuizRunner({ scale })
+  const sound = useSound({ createContext: createAudioContext })
+  const { play } = sound
+
+  // 「答え」で基準→答えを鳴らす。「次」では止めるだけ（F-406）
+  const { question, phase, advance: runnerAdvance } = runner
+  const quiz = useMemo(() => ({
+    question,
+    phase,
+    advance: () => {
+      play(phase === 'asking' ? quizSound(baseNote(question, scale), question.interval) : [])
+      runnerAdvance()
+    },
+  }), [question, phase, runnerAdvance, scale, play])
 
   const moveFocus = useCallback((delta: number) => {
     setFocus((f) => SECTIONS[Math.min(SECTIONS.length - 1, Math.max(0, SECTIONS.indexOf(f) + delta))])
@@ -95,9 +117,12 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
     setChordIndex(NO_SELECTION)
   }, [currentKey, todayKey, setManualKey, setChordIndex])
 
+  // 行を選ぶと同時に構成音を鳴らす（F-306）。すでに選択中の行でも鳴る
   const selectChord = useCallback((section: ChordSectionId, index: number) => {
-    setChordIndex((c) => ({ ...c, [section]: Math.min(CHORD_COUNT[section] - 1, Math.max(0, index)) }))
-  }, [setChordIndex])
+    const i = Math.min(CHORD_COUNT[section] - 1, Math.max(0, index))
+    play(chordSound(CHORDS_OF[section](currentKey)[i].chord))
+    setChordIndex((c) => ({ ...c, [section]: i }))
+  }, [setChordIndex, play, currentKey])
 
   const togglePenta = useCallback(() => setPentaMode((m) => (m === 'major' ? 'minor' : 'major')), [setPentaMode])
 
@@ -107,5 +132,6 @@ export function useDrillState({ now: nowProp }: { now?: Date } = {}): DrillState
     chordIndex, selectChord,
     pentaMode, togglePenta,
     quiz, nextKey, selectKey,
+    sound: { enabled: sound.enabled, toggle: sound.toggle },
   }
 }

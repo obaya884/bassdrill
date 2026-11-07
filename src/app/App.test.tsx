@@ -25,12 +25,12 @@ describe('App（PC 表示）', () => {
     expect(screen.queryByText(/\/ 12/)).not.toBeInTheDocument()
     expect(document.querySelector('[data-focused]')).toBeNull()
   })
-  it('ヘッダー右端に音の入切ボタンがあり、既定は切。押すと入になる（F-506）', async () => {
+  it('ヘッダー右端に音の入切ボタンがあり、PC の既定は入。押すと切になる（F-506）', async () => {
     render(<App now={NOW} />)
     const btn = within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' })
-    expect(btn).toHaveAttribute('aria-pressed', 'false')
-    await userEvent.click(btn)
     expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
   })
   it('今日のキーがヘッダーに出て、補助文言も 5 度圏の図もヘッダーには無い', () => {
     render(<App now={NOW} />)
@@ -180,17 +180,22 @@ describe('App: 表示モードの切り替え（F-606）', () => {
     expect(section('quiz').getByTestId('quiz-answer')).toBeInTheDocument()
     expect(section('seventh').getByRole('row', { selected: true })).toHaveTextContent('I7')
   })
+  it('PC で開いた音の入はスマホ表示に切り替えても引き継ぎ、スマホの既定（切）にはならない', () => {
+    render(<App now={NOW} />)
+    act(() => setViewport(390))
+    expect(within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' })).toHaveAttribute('aria-pressed', 'true')
+  })
 })
 
 describe('スケール・ペンタの再生ボタン（F-206。PC）', () => {
-  it('スケールとペンタの節に再生ボタンがあり、音が切では押せず、入にすると押せる', async () => {
+  it('スケールとペンタの節に再生ボタンがあり、PC は既定で押せる。切にすると押せない', async () => {
     render(<App now={NOW} />)
     const scaleBtn = within(document.querySelector('#section-scale') as HTMLElement).getByRole('button', { name: 'スケールを再生' })
     const pentaBtn = within(document.querySelector('#section-penta') as HTMLElement).getByRole('button', { name: 'ペンタを再生' })
-    expect(scaleBtn).toBeDisabled()
-    expect(pentaBtn).toBeDisabled()
-    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' }))
     expect(scaleBtn).toBeEnabled()
     expect(pentaBtn).toBeEnabled()
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' }))
+    expect(scaleBtn).toBeDisabled()
+    expect(pentaBtn).toBeDisabled()
   })
 })

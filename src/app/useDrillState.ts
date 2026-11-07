@@ -39,7 +39,7 @@ export type DrillState = {
   /** スケール・ペンタの再生（F-206）: 表示中の音を根音→1 オクターブ上→根音と鳴らす。音が切なら何もしない */
   playScale(section: 'scale' | 'penta'): void
   quiz: { question: Question; phase: QuizPhase; advance(): void }
-  /** 音の入切（F-506）。既定は切。入のとき selectChord と「答え」で鳴る（F-306・F-406） */
+  /** 音の入切（F-506）。開いた瞬間の値は initialSoundEnabled（App が表示モードで決める）。入のとき行タップ・「答え」・再生ボタンで鳴る（F-306・F-406・F-206） */
   sound: { enabled: boolean; toggle(): void }
   nextKey(): void
   selectKey(k: NoteName): void
@@ -51,9 +51,9 @@ function todayString(now: Date): string {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
-type Options = { now?: Date; createAudioContext?: () => AudioContextLike | null }
+type Options = { now?: Date; createAudioContext?: () => AudioContextLike | null; initialSoundEnabled?: boolean }
 
-export function useDrillState({ now: nowProp, createAudioContext }: Options = {}): DrillState {
+export function useDrillState({ now: nowProp, createAudioContext, initialSoundEnabled }: Options = {}): DrillState {
   // 描画中に Date を呼ばない（lint の purity）。開いたまま日付をまたいだら 1 分ごとの確認とタブ復帰で追随する
   const [now, setNow] = useState(() => nowProp ?? new Date())
   const day = dayNumber(now)
@@ -88,7 +88,7 @@ export function useDrillState({ now: nowProp, createAudioContext }: Options = {}
   const scale = useMemo(() => majorScale(currentKey), [currentKey])
   const keyLabel = useKeyRoulette({ today: todayKey, current: currentKey, trigger: today })
   const runner = useQuizRunner({ scale })
-  const sound = useSound({ createContext: createAudioContext })
+  const sound = useSound({ createContext: createAudioContext, initialEnabled: initialSoundEnabled })
   const { play } = sound
 
   // 「答え」で基準→答えを鳴らす。「次」では止めるだけ（F-406）

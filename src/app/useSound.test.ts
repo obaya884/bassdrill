@@ -58,6 +58,44 @@ describe('useSound', () => {
   })
 })
 
+describe('useSound を入で開く（F-506。PC の既定）', () => {
+  it('initialEnabled: true なら最初から入で、AudioContext はまだ作らない', () => {
+    const createContext = vi.fn(() => fakeAudioContext())
+    const { result } = renderHook(() => useSound({ createContext, initialEnabled: true }))
+    expect(result.current.enabled).toBe(true)
+    expect(createContext).not.toHaveBeenCalled()
+  })
+  it('入のまま最初の play で createContext を 1 回だけ呼んで resume し、その段取りを鳴らす。2 回目は作り直さない', () => {
+    const ctx = fakeAudioContext(2)
+    const createContext = vi.fn(() => ctx)
+    const { result } = renderHook(() => useSound({ createContext, initialEnabled: true }))
+    act(() => result.current.play(steps))
+    expect(createContext).toHaveBeenCalledTimes(1)
+    expect(ctx.resume).toHaveBeenCalledTimes(1)
+    expect(ctx.oscs).toHaveLength(1)
+    expect(ctx.oscs[0].start).toHaveBeenCalledWith(2)
+    act(() => result.current.play(steps))
+    expect(createContext).toHaveBeenCalledTimes(1)
+    expect(ctx.oscs).toHaveLength(2)
+  })
+  it('最初の play でも audioSession.type を playback にしてから AudioContext を作る', () => {
+    const audioSession = { type: 'auto' }
+    const seen: string[] = []
+    const createContext = () => { seen.push(audioSession.type); return fakeAudioContext() }
+    const { result } = renderHook(() => useSound({ createContext, getAudioSession: () => audioSession, initialEnabled: true }))
+    act(() => result.current.play(steps))
+    expect(seen).toEqual(['playback'])
+  })
+  it('入で開いて切にすると、作っていなくても落ちず、以後 play しても作らない', () => {
+    const createContext = vi.fn(() => fakeAudioContext())
+    const { result } = renderHook(() => useSound({ createContext, initialEnabled: true }))
+    act(() => result.current.toggle())
+    expect(result.current.enabled).toBe(false)
+    act(() => result.current.play(steps))
+    expect(createContext).not.toHaveBeenCalled()
+  })
+})
+
 describe('useSound とマナーモード（F-506）', () => {
   it('入にすると audioSession.type を playback にし、切に戻すと auto に戻す', () => {
     const ctx = fakeAudioContext()

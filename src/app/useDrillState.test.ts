@@ -102,6 +102,13 @@ describe('useDrillState の音（F-306・F-406・F-506）', () => {
     expect(result.current.quiz.phase).toBe('asking')
     expect(ctx.oscs).toHaveLength(2)
   })
+  it('initialSoundEnabled: true なら入で始まり、toggle せずに selectChord で鳴る', () => {
+    const ctx = fakeAudioContext(1)
+    const { result } = renderHook(() => useDrillState({ now: NOW, createAudioContext: () => ctx, initialSoundEnabled: true }))
+    expect(result.current.sound.enabled).toBe(true)
+    act(() => result.current.selectChord('diatonic', 0))
+    expect(ctx.oscs).toHaveLength(8)
+  })
   it('nextKey・selectKey・moveFocus では鳴らない', () => {
     const { ctx, result } = setup()
     act(() => result.current.sound.toggle())

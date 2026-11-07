@@ -147,3 +147,26 @@ describe('PhoneApp: 節の中身（F-602・F-603・F-403・F-304）', () => {
     expect(box.scrollLeft).toBe(0)
   })
 })
+
+describe('スケール・ペンタの再生ボタン（F-206。スマホ）', () => {
+  beforeEach(() => setViewport(390, true))
+  it('スケールの節に再生ボタンがあり、音が切では押せず、入にすると押せる。ペンタの節にもある', async () => {
+    render(<App now={NOW} />)
+    const scaleBtn = focused().getByRole('button', { name: 'スケールを再生' })
+    expect(scaleBtn).toBeDisabled()
+    await userEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' }))
+    expect(scaleBtn).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: '次の節' }))
+    expect(focused().getByRole('button', { name: 'ペンタを再生' })).toBeEnabled()
+  })
+  it('ペンタの節は指板 → メジャー / マイナー → 再生ボタンの順に並ぶ', async () => {
+    render(<App now={NOW} />)
+    await userEvent.click(screen.getByRole('button', { name: '次の節' }))
+    const fretboard = document.querySelector('section[data-focused="true"] svg') as Element
+    const toggle = focused().getByRole('button', { name: 'メジャー / マイナー' })
+    const play = focused().getByRole('button', { name: 'ペンタを再生' })
+    const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    expect(follows(fretboard, toggle)).toBe(true)
+    expect(follows(toggle, play)).toBe(true)
+  })
+})

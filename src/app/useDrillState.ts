@@ -1,11 +1,11 @@
 // App の状態と操作（キー・スマホの節・コード選択・出題・ペンタ・音）。PC とスマホの両方の木が同じ状態を使う（F-606）
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type NoteName, equalsNote } from '../domain/pitch'
-import { majorScale, nextOnCircle, type PentaMode } from '../domain/scale'
+import { majorScale, majorPentatonic, relativeMinorPentatonic, nextOnCircle, type PentaMode } from '../domain/scale'
 import { dayNumber, keyForDay } from '../domain/dailyKey'
 import { type Question, type QuizPhase, baseNote } from '../domain/quiz'
 import { diatonicChords, keySevenths, nonDiatonicChords } from '../domain/progression'
-import { chordSound, quizSound } from '../domain/sound'
+import { chordSound, quizSound, scaleSound } from '../domain/sound'
 import { useQuizRunner } from './useQuizRunner'
 import { useKeyRoulette } from './useKeyRoulette'
 import { useSound } from './useSound'
@@ -36,6 +36,8 @@ export type DrillState = {
   selectChord(section: ChordSectionId, index: number): void
   pentaMode: PentaMode
   togglePenta(): void
+  /** スケール・ペンタの再生（F-206）: 表示中の音を根音→1 オクターブ上→根音と鳴らす。音が切なら何もしない */
+  playScale(section: 'scale' | 'penta'): void
   quiz: { question: Question; phase: QuizPhase; advance(): void }
   /** 音の入切（F-506）。既定は切。入のとき selectChord と「答え」で鳴る（F-306・F-406） */
   sound: { enabled: boolean; toggle(): void }
@@ -126,11 +128,22 @@ export function useDrillState({ now: nowProp, createAudioContext }: Options = {}
 
   const togglePenta = useCallback(() => setPentaMode((m) => (m === 'major' ? 'minor' : 'major')), [setPentaMode])
 
+  const playScale = useCallback((section: 'scale' | 'penta') => {
+    if (section === 'scale') {
+      play(scaleSound(currentKey, majorScale(currentKey)))
+    } else {
+      const { root, tones } = pentaMode === 'major'
+        ? { root: currentKey, tones: majorPentatonic(currentKey) }
+        : relativeMinorPentatonic(currentKey)
+      play(scaleSound(root, tones.map((t) => t.note)))
+    }
+  }, [play, currentKey, pentaMode])
+
   return {
     today, currentKey, todayKey, keyLabel, manualKey, scale,
     focus, setFocus, moveFocus,
     chordIndex, selectChord,
-    pentaMode, togglePenta,
+    pentaMode, togglePenta, playScale,
     quiz, nextKey, selectKey,
     sound: { enabled: sound.enabled, toggle: sound.toggle },
   }

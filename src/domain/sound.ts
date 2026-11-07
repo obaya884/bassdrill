@@ -1,4 +1,4 @@
-// 音の高さと鳴らす段取り（F-306・F-406）。鳴らす処理（Web Audio）は app/audioPlayer が持ち、ここは純粋関数だけ
+// 音の高さと鳴らす段取り（F-306・F-406・F-206）。鳴らす処理（Web Audio）は app/audioPlayer が持ち、ここは純粋関数だけ
 import { type NoteName, pitchClass } from './pitch'
 import { type Chord } from './chord'
 import { type IntervalId, INTERVAL_SPEC } from './quiz'
@@ -24,11 +24,16 @@ export function rootMidi(root: NoteName): number {
   return ROOT_LOW + ((pitchClass(root) - pitchClass({ letter: 'E', accidental: 0 }) + 12) % 12)
 }
 
+/** 根音から上へ 1 オクターブ内に積んだ音の MIDI 番号（notes は根音から始まるスケール順） */
+function stackFromRoot(root: NoteName, notes: NoteName[]): number[] {
+  const base = rootMidi(root)
+  const rootPc = pitchClass(root)
+  return notes.map((n) => base + ((pitchClass(n) - rootPc + 12) % 12))
+}
+
 /** 根音から上へ 1 オクターブ内に積んだ構成音の MIDI 番号（低い順） */
 function stackedMidis(chord: Chord): number[] {
-  const root = rootMidi(chord.root)
-  const rootPc = pitchClass(chord.root)
-  return chord.tones.map((t) => root + ((pitchClass(t.note) - rootPc + 12) % 12))
+  return stackFromRoot(chord.root, chord.tones.map((t) => t.note))
 }
 
 /** コードの段取り: 低い順に 1 音ずつ → 4 音同時 */
@@ -47,4 +52,11 @@ export function quizSound(base: NoteName, interval: IntervalId): SoundStep[] {
     { midis: [b], seconds: QUIZ_BASE_SECONDS },
     { midis: [b + INTERVAL_SPEC[interval].semitones], seconds: QUIZ_ANSWER_SECONDS },
   ]
+}
+
+/** スケール・ペンタの段取り（F-206）: 根音から 1 音ずつ上って 1 オクターブ上の根音まで、そのまま下って根音まで。折り返しは 1 回 */
+export function scaleSound(root: NoteName, notes: NoteName[]): SoundStep[] {
+  const up = [...stackFromRoot(root, notes), rootMidi(root) + 12]
+  const path = [...up, ...up.slice(0, -1).reverse()]
+  return path.map((m) => ({ midis: [m], seconds: CHORD_NOTE_SECONDS }))
 }

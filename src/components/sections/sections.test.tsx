@@ -11,18 +11,18 @@ import { SeventhSection } from './chordSections'
 
 describe('sections', () => {
   it('ScaleSection は C の 7 音を根音付きで出す', () => {
-    render(<ScaleSection keyNote={note('C')} />)
+    render(<ScaleSection keyNote={note('C')} soundEnabled={false} onPlay={() => {}} />)
     const ms = screen.getAllByTestId('marker')
     expect(ms.filter((m) => m.dataset.kind === 'root').length).toBeGreaterThan(0)
     expect(ms.filter((m) => m.dataset.kind === 'root').every((m) => m.textContent?.startsWith('C'))).toBe(true)
     expect(ms.length).toBe(32) // 各弦 8 音 × 4 弦
   })
   it('PentaSection major は C メジャーペンタと名乗る', () => {
-    render(<PentaSection keyNote={note('C')} mode="major" onToggle={() => {}} />)
+    render(<PentaSection keyNote={note('C')} mode="major" onToggle={() => {}} soundEnabled={false} onPlay={() => {}} />)
     expect(screen.getByRole('heading', { name: 'C メジャーペンタ' })).toBeInTheDocument()
   })
   it('PentaSection minor は A マイナーペンタと名乗り、根音が A', () => {
-    render(<PentaSection keyNote={note('C')} mode="minor" onToggle={() => {}} />)
+    render(<PentaSection keyNote={note('C')} mode="minor" onToggle={() => {}} soundEnabled={false} onPlay={() => {}} />)
     expect(screen.getByRole('heading', { name: 'A マイナーペンタ' })).toBeInTheDocument()
     const roots = screen.getAllByTestId('marker').filter((m) => m.dataset.kind === 'root')
     expect(roots.length).toBeGreaterThan(0)
@@ -81,7 +81,7 @@ describe('操作の入口（F-304・F-202）', () => {
   })
   it('PentaSection のボタンで onToggle', async () => {
     const onToggle = vi.fn()
-    render(<PentaSection keyNote={note('C')} mode="major" onToggle={onToggle} />)
+    render(<PentaSection keyNote={note('C')} mode="major" onToggle={onToggle} soundEnabled={false} onPlay={() => {}} />)
     await userEvent.click(screen.getByRole('button', { name: 'メジャー / マイナー' }))
     expect(onToggle).toHaveBeenCalledTimes(1)
   })

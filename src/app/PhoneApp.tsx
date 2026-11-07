@@ -14,7 +14,7 @@ import { useSwipe } from './useSwipe'
 import { type DrillState } from './useDrillState'
 
 export function PhoneApp({ state }: { state: DrillState }) {
-  const { focus, currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, sound, selectChord, selectKey, nextKey, togglePenta } = state
+  const { focus, currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, sound, selectChord, selectKey, nextKey, togglePenta, playScale } = state
   const index = SECTIONS.indexOf(focus)
 
   // キー選択シート（F-104・F-604）。開いている間、帯のスワイプは効かない
@@ -51,8 +51,8 @@ export function PhoneApp({ state }: { state: DrillState }) {
 
   const body = (id: SectionId) => {
     switch (id) {
-      case 'scale': return <ScaleSection keyNote={currentKey} compact />
-      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} onToggle={togglePenta} compact />
+      case 'scale': return <ScaleSection keyNote={currentKey} soundEnabled={sound.enabled} onPlay={() => playScale('scale')} compact />
+      case 'penta': return <PentaSection keyNote={currentKey} mode={pentaMode} onToggle={togglePenta} soundEnabled={sound.enabled} onPlay={() => playScale('penta')} compact />
       case 'seventh': return <SeventhSection keyNote={currentKey} selected={chordIndex.seventh} compact onSelect={(i) => selectChord('seventh', i)} />
       case 'quiz': return <QuizCard question={quiz.question} phase={quiz.phase} scale={scale} onAdvance={quiz.advance} compact />
       case 'diatonic': return <DiatonicSection keyNote={currentKey} selected={chordIndex.diatonic} compact onSelect={(i) => selectChord('diatonic', i)} />

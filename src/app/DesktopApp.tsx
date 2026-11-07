@@ -1,7 +1,8 @@
-// PC 表示（F-501・F-502。画面定義書 13 §1〜§3）: 固定ヘッダー（キーのボタンとポップオーバー）と、6 節を等倍で縦に並べた本体。キーボードは購読しない
+// PC 表示（F-501・F-502。画面定義書 13 §1〜§3）: 固定ヘッダー（キーのボタンとポップオーバー、右端に音の入切）と、6 節を等倍で縦に並べた本体。キーボードは購読しない
 import { useState } from 'react'
 import { formatNote } from '../domain/pitch'
 import { KeyPopover } from '../components/KeyPopover'
+import { SoundToggle } from '../components/SoundToggle'
 import { QuizCard } from '../components/QuizCard'
 import { ScaleSection } from '../components/sections/ScaleSection'
 import { PentaSection } from '../components/sections/PentaSection'
@@ -10,7 +11,7 @@ import { SECTIONS, SECTION_TITLES, type SectionId } from './sections'
 import { type DrillState } from './useDrillState'
 
 export function DesktopApp({ state }: { state: DrillState }) {
-  const { currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, selectKey, nextKey, selectChord, togglePenta } = state
+  const { currentKey, todayKey, keyLabel, chordIndex, pentaMode, quiz, scale, sound, selectKey, nextKey, selectChord, togglePenta } = state
   const [chooserOpen, setChooserOpen] = useState(false)
   const close = () => setChooserOpen(false)
 
@@ -44,6 +45,9 @@ export function DesktopApp({ state }: { state: DrillState }) {
             {chooserOpen && (
               <KeyPopover current={currentKey} today={todayKey} onSelect={(k) => { selectKey(k); close() }} onNext={() => { nextKey(); close() }} onClose={close} />
             )}
+          </div>
+          <div className="absolute right-6 top-1/2 -translate-y-1/2">
+            <SoundToggle enabled={sound.enabled} onToggle={sound.toggle} />
           </div>
         </div>
       </header>

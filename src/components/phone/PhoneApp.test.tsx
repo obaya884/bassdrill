@@ -27,6 +27,13 @@ describe('PhoneApp: 骨組み（F-601・F-602）', () => {
     expect(screen.queryByText('今日のキー')).not.toBeInTheDocument()
     expect(screen.getByRole('banner')).toHaveTextContent('Bass Drill')
   })
+  it('ヘッダーに音の入切ボタンがあり、既定は切。押すと入になる（F-506）', async () => {
+    render(<App now={NOW} />)
+    const btn = within(screen.getByRole('banner')).getByRole('button', { name: '音の入切' })
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
   it('› ‹ で節が移り、端で止まる', async () => {
     render(<App now={NOW} />)
     await next()

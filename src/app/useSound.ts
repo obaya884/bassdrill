@@ -5,12 +5,18 @@ import { type AudioContextLike, type Player, createPlayer } from './audioPlayer'
 
 export type SoundState = { enabled: boolean; toggle(): void; play(steps: SoundStep[]): void }
 
-type Options = { createContext?: () => AudioContextLike | null }
+/** iOS のマナーモード中でも鳴らすための音声セッション（AudioSession API。WebKit のみ。無い環境は null） */
+export type AudioSessionLike = { type: string }
+
+type Options = { createContext?: () => AudioContextLike | null; getAudioSession?: () => AudioSessionLike | null }
 
 const defaultCreateContext = (): AudioContextLike | null =>
   typeof window !== 'undefined' && typeof window.AudioContext === 'function' ? new window.AudioContext() : null
 
-export function useSound({ createContext = defaultCreateContext }: Options = {}): SoundState {
+const defaultAudioSession = (): AudioSessionLike | null =>
+  typeof navigator !== 'undefined' ? ((navigator as { audioSession?: AudioSessionLike }).audioSession ?? null) : null
+
+export function useSound({ createContext = defaultCreateContext, getAudioSession = defaultAudioSession }: Options = {}): SoundState {
   const [enabled, setEnabled] = useState(false)
   const ctxRef = useRef<AudioContextLike | null>(null)
   const playerRef = useRef<Player | null>(null)
@@ -19,18 +25,22 @@ export function useSound({ createContext = defaultCreateContext }: Options = {})
   // 副作用は setState の更新関数の外で起こす（StrictMode の二重実行で 2 回作らないため）
   const toggle = useCallback(() => {
     const next = !enabled
+    const session = getAudioSession()
     if (next) {
       if (!created.current) {
         created.current = true
         ctxRef.current = createContext()
         playerRef.current = ctxRef.current ? createPlayer(ctxRef.current) : null
       }
+      // iOS はマナーモード中 Web Audio を無音にする（環境音扱い）。入にした以上は鳴らすので再生用のセッションにする（F-506）
+      if (session) session.type = 'playback'
       void ctxRef.current?.resume()
     } else {
       playerRef.current?.stop()
+      if (session) session.type = 'auto'
     }
     setEnabled(next)
-  }, [enabled, createContext])
+  }, [enabled, createContext, getAudioSession])
 
   const play = useCallback((steps: SoundStep[]) => {
     if (!enabled) return

@@ -57,3 +57,21 @@ describe('useSound', () => {
     act(() => result.current.play(steps))
   })
 })
+
+describe('useSound とマナーモード（F-506）', () => {
+  it('入にすると audioSession.type を playback にし、切に戻すと auto に戻す', () => {
+    const ctx = fakeAudioContext()
+    const audioSession = { type: 'auto' }
+    const { result } = renderHook(() => useSound({ createContext: () => ctx, getAudioSession: () => audioSession }))
+    act(() => result.current.toggle())
+    expect(audioSession.type).toBe('playback')
+    act(() => result.current.toggle())
+    expect(audioSession.type).toBe('auto')
+  })
+  it('audioSession が無い環境でも入切できる', () => {
+    const ctx = fakeAudioContext()
+    const { result } = renderHook(() => useSound({ createContext: () => ctx, getAudioSession: () => null }))
+    act(() => result.current.toggle())
+    expect(result.current.enabled).toBe(true)
+  })
+})

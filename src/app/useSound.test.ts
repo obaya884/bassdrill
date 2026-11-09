@@ -78,13 +78,13 @@ describe('useSound を入で開く（F-506。PC の既定）', () => {
     expect(createContext).toHaveBeenCalledTimes(1)
     expect(ctx.oscs).toHaveLength(2)
   })
-  it('最初の play でも audioSession.type を playback にしてから AudioContext を作る', () => {
+  it('最初の play でも audioSession.type を ambient にしてから AudioContext を作る', () => {
     const audioSession = { type: 'auto' }
     const seen: string[] = []
     const createContext = () => { seen.push(audioSession.type); return fakeAudioContext() }
     const { result } = renderHook(() => useSound({ createContext, getAudioSession: () => audioSession, initialEnabled: true }))
     act(() => result.current.play(steps))
-    expect(seen).toEqual(['playback'])
+    expect(seen).toEqual(['ambient'])
   })
   it('入で開いて切にすると、作っていなくても落ちず、以後 play しても作らない', () => {
     const createContext = vi.fn(() => fakeAudioContext())
@@ -96,23 +96,35 @@ describe('useSound を入で開く（F-506。PC の既定）', () => {
   })
 })
 
-describe('useSound とマナーモード（F-506）', () => {
-  it('入にすると audioSession.type を playback にし、切に戻すと auto に戻す', () => {
+describe('useSound と他のアプリの音（F-506）', () => {
+  it('入にすると audioSession.type を ambient にする（他のアプリの音を止めない。playback は止める）', () => {
     const ctx = fakeAudioContext()
     const audioSession = { type: 'auto' }
     const { result } = renderHook(() => useSound({ createContext: () => ctx, getAudioSession: () => audioSession }))
     act(() => result.current.toggle())
-    expect(audioSession.type).toBe('playback')
-    act(() => result.current.toggle())
-    expect(audioSession.type).toBe('auto')
+    expect(audioSession.type).toBe('ambient')
   })
-  it('audioSession を playback にするのは AudioContext を作る前（作成済みの文脈には効かない）', () => {
+  it('ブラウザに playback が残っていても、入にすると ambient に上書きする', () => {
+    const audioSession = { type: 'playback' }
+    const { result } = renderHook(() => useSound({ createContext: () => fakeAudioContext(), getAudioSession: () => audioSession }))
+    act(() => result.current.toggle())
+    expect(audioSession.type).toBe('ambient')
+  })
+  it('切に戻しても audioSession.type は変えない', () => {
+    const audioSession = { type: 'auto' }
+    const { result } = renderHook(() => useSound({ createContext: () => fakeAudioContext(), getAudioSession: () => audioSession }))
+    act(() => result.current.toggle())
+    act(() => result.current.toggle())
+    expect(result.current.enabled).toBe(false)
+    expect(audioSession.type).toBe('ambient')
+  })
+  it('audioSession を ambient にするのは AudioContext を作る前（作成済みの文脈には効かない）', () => {
     const audioSession = { type: 'auto' }
     const seen: string[] = []
     const createContext = () => { seen.push(audioSession.type); return fakeAudioContext() }
     const { result } = renderHook(() => useSound({ createContext, getAudioSession: () => audioSession }))
     act(() => result.current.toggle())
-    expect(seen).toEqual(['playback'])
+    expect(seen).toEqual(['ambient'])
   })
   it('audioSession が無い環境でも入切できる', () => {
     const ctx = fakeAudioContext()

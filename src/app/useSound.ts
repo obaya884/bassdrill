@@ -6,7 +6,7 @@ import { type AudioContextLike, type Player, createPlayer } from './audioPlayer'
 
 export type SoundState = { enabled: boolean; toggle(): void; play(steps: SoundStep[]): void }
 
-/** iOS のマナーモード中でも鳴らすための音声セッション（AudioSession API。WebKit のみ。無い環境は null） */
+/** 他のアプリの音との重なり方を決める音声セッション（AudioSession API。WebKit のみ。無い環境は null） */
 export type AudioSessionLike = { type: string }
 
 type Options = { createContext?: () => AudioContextLike | null; getAudioSession?: () => AudioSessionLike | null; initialEnabled?: boolean }
@@ -25,10 +25,12 @@ export function useSound({ createContext = defaultCreateContext, getAudioSession
 
   // 音の準備。利用者の操作（入切ボタン・行タップ・答え・再生ボタン）の中から呼ぶ
   const prepare = useCallback(() => {
-    // iOS はマナーモード中 Web Audio を無音にする（環境音扱い）。入にした以上は鳴らすので再生用のセッションにする（F-506）。
+    // 先に鳴っている他のアプリの音（音楽など）を止めず、重ねて鳴らす（F-506）。iOS の playback は他のアプリの音を止める。
+    // 引き換えにマナーモード中はスピーカーから鳴らない（両立する指定は Web に無い。log_12 2026-11-09）。
+    // 設定はブラウザ全体に残るので、以前の playback が残っていても上書きするよう明示する。
     // AudioContext を作る前に設定する（作成済みの文脈には効かなかった。実機 2026-11-07）
     const session = getAudioSession()
-    if (session) session.type = 'playback'
+    if (session) session.type = 'ambient'
     if (!created.current) {
       created.current = true
       ctxRef.current = createContext()
@@ -44,11 +46,9 @@ export function useSound({ createContext = defaultCreateContext, getAudioSession
       prepare()
     } else {
       playerRef.current?.stop()
-      const session = getAudioSession()
-      if (session) session.type = 'auto'
     }
     setEnabled(next)
-  }, [enabled, prepare, getAudioSession])
+  }, [enabled, prepare])
 
   // 入で開いた（PC の既定）ときは toggle を経ないので、最初に鳴らす操作の中で作る
   const play = useCallback((steps: SoundStep[]) => {
